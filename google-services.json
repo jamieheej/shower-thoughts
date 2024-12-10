@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "949127998667",
+    "project_id": "shower-thoughts-4998b",
+    "storage_bucket": "shower-thoughts-4998b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:949127998667:android:0c484a0f366ff02addbf4e",
+        "android_client_info": {
+          "package_name": "com.company.showerthoughts"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "949127998667-iidv5iaa6fjsdfr84a2mscnat89es04p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwHoqAG_VO-jqhcJBpNTehwLEMtEh5SGA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "949127998667-iidv5iaa6fjsdfr84a2mscnat89es04p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "949127998667-oh67nmt92fi38o04d8anh262fbaj0cn3.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.company.showerthoughts"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
