@@ -13,14 +13,16 @@
       "bundleIdentifier": "com.comfortstudio.showerthoughts",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.comfortstudio.showerthoughts"
+      "package": "com.comfortstudio.showerthoughts",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
