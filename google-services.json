@@ -12,7 +12,20 @@
           "package_name": "com.comfortstudio.showerthoughts"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "291945376722-6udeb8an2dllovg4uj132d7hqmrf7vvl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.comfortstudio.showerthoughts",
+            "certificate_hash": "fcc54403b99f49999e8c28037b1ff123183294e1"
+          }
+        },
+        {
+          "client_id": "291945376722-78ioq4md3dugoqa0n3p1g380lnbeivuo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyD8hsiV61_kLkbGfPI9SaG6McwMlC8i534"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "291945376722-78ioq4md3dugoqa0n3p1g380lnbeivuo.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "291945376722-c9rfij07au326ldonl2tnjdrhi4mmsi2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.comfortstudio.showerthoughts"
+              }
+            }
+          ]
         }
       }
     }
