@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "291945376722",
+    "project_id": "shower-thoughts-462e8",
+    "storage_bucket": "shower-thoughts-462e8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:291945376722:android:85def88f512ca6d70e360b",
+        "android_client_info": {
+          "package_name": "com.comfortstudio.showerthoughts"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD8hsiV61_kLkbGfPI9SaG6McwMlC8i534"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
