@@ -6,6 +6,9 @@ import {
   type User,
 } from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
+import { collection, setDoc, doc } from "firebase/firestore";
+import db from "@/firebase/firebaseConfig";
+import { useRouter } from "expo-router";
 
 const styles = StyleSheet.create({
   container: {
@@ -21,6 +24,7 @@ const styles = StyleSheet.create({
 });
 
 const LoginScreen: React.FC = () => {
+  const router = useRouter();
   const [userInfo, setUserInfo] = useState<User["user"] | null>(null);
   const [loginMethod, setLoginMethod] = useState<"apple" | "google" | null>(null);
 
@@ -36,15 +40,18 @@ const LoginScreen: React.FC = () => {
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
-      setUserInfo({
+      const userData = {
         id: credential.user,
         name: credential.fullName?.givenName ?? '',
         email: credential.email ?? '',
         photo: null,
         familyName: credential.fullName?.familyName ?? null,
         givenName: credential.fullName?.givenName ?? null,
-      });
+      };
+      setUserInfo(userData);
       setLoginMethod("apple");
+      await setDoc(doc(collection(db, "users"), userData.id), userData, { merge: true });
+      router.push('/Thoughts');
     } catch (error: any) {
       handleAuthError(error);
     }
@@ -54,8 +61,13 @@ const LoginScreen: React.FC = () => {
     try {
       await GoogleSignin.hasPlayServices();
       const response = await GoogleSignin.signIn();
-      setUserInfo(response.data?.user ?? null);
-      setLoginMethod("google");
+      const userData = response.data?.user ?? null;
+      if (userData) {
+        setUserInfo(userData);
+        setLoginMethod("google");
+        await setDoc(doc(collection(db, "users"), userData.id), userData, { merge: true });
+        router.push('/Thoughts');
+      }
     } catch (error: any) {
       handleAuthError(error);
     }
