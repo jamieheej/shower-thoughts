@@ -8,6 +8,7 @@ import {
 import * as AppleAuthentication from "expo-apple-authentication";
 import { collection, setDoc, doc } from "firebase/firestore";
 import db from "@/firebase/firebaseConfig";
+import { useRouter } from "expo-router";
 
 const styles = StyleSheet.create({
   container: {
@@ -23,6 +24,7 @@ const styles = StyleSheet.create({
 });
 
 const LoginScreen: React.FC = () => {
+  const router = useRouter();
   const [userInfo, setUserInfo] = useState<User["user"] | null>(null);
   const [loginMethod, setLoginMethod] = useState<"apple" | "google" | null>(null);
 
@@ -49,6 +51,7 @@ const LoginScreen: React.FC = () => {
       setUserInfo(userData);
       setLoginMethod("apple");
       await setDoc(doc(collection(db, "users"), userData.id), userData, { merge: true });
+      router.push('/Thoughts');
     } catch (error: any) {
       handleAuthError(error);
     }
@@ -62,7 +65,8 @@ const LoginScreen: React.FC = () => {
       if (userData) {
         setUserInfo(userData);
         setLoginMethod("google");
-        await setDoc(doc(collection(db, "users"), userData.id), userData, { merge: true });  
+        await setDoc(doc(collection(db, "users"), userData.id), userData, { merge: true });
+        router.push('/Thoughts');
       }
     } catch (error: any) {
       handleAuthError(error);
