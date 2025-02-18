@@ -9,6 +9,7 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { collection, setDoc, doc } from "firebase/firestore";
 import db from "@/firebase/firebaseConfig";
 import { useRouter } from "expo-router";
+import { useUser } from "./(context)/UserContext";
 
 const styles = StyleSheet.create({
   container: {
@@ -23,10 +24,19 @@ const styles = StyleSheet.create({
   },
 });
 
-const LoginScreen: React.FC = () => {
+type UserData = {
+  id: string;
+  name: string | null;
+  email: string;
+  photo: string | null;
+  familyName: string | null;
+  givenName: string | null;
+  loginMethod: "apple" | "google" | null;
+};
+
+export default function HomeScreen() {
   const router = useRouter();
-  const [userInfo, setUserInfo] = useState<User["user"] | null>(null);
-  const [loginMethod, setLoginMethod] = useState<"apple" | "google" | null>(null);
+  const { userInfo, setUserInfo, handleLogout } = useUser();
 
   useEffect(() => {
     GoogleSignin.configure();
@@ -47,9 +57,9 @@ const LoginScreen: React.FC = () => {
         photo: null,
         familyName: credential.fullName?.familyName ?? null,
         givenName: credential.fullName?.givenName ?? null,
+        loginMethod: "apple",
       };
       setUserInfo(userData);
-      setLoginMethod("apple");
       await setDoc(doc(collection(db, "users"), userData.id), userData, { merge: true });
       router.push('/Thoughts');
     } catch (error: any) {
@@ -61,10 +71,10 @@ const LoginScreen: React.FC = () => {
     try {
       await GoogleSignin.hasPlayServices();
       const response = await GoogleSignin.signIn();
-      const userData = response.data?.user ?? null;
+      const userData = response.data?.user as UserData;
       if (userData) {
+        userData.loginMethod = "google";
         setUserInfo(userData);
-        setLoginMethod("google");
         await setDoc(doc(collection(db, "users"), userData.id), userData, { merge: true });
         router.push('/Thoughts');
       }
@@ -84,27 +94,8 @@ const LoginScreen: React.FC = () => {
     }
   };
 
-  const handleLogout = async () => {
-    if (loginMethod === "apple") {
-      await handleAppleLogout();
-    } else if (loginMethod === "google") {
-      await handleGoogleLogout();
-    }
-    setLoginMethod(null);
-  };
-
-  const handleAppleLogout = async () => {
-    setUserInfo(null);
-    console.log("User signed out from Apple");
-  };
-
-  const handleGoogleLogout = async () => {
-    await GoogleSignin.signOut();
-    setUserInfo(null);
-    console.log("User signed out from Google");
-  };
-
   const userName = userInfo?.name ?? "Guest";
+  console.log(userInfo)
 
   return (
     <View style={styles.container}>
@@ -129,5 +120,3 @@ const LoginScreen: React.FC = () => {
     </View>
   );
 };
-
-export default LoginScreen;
