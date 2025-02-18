@@ -13,7 +13,7 @@ type Thought = {
     id: string;
 }
 
-const Thoughts: React.FC = () => {
+export default function Thoughts() {
   const router = useRouter();
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const currentUserId = GoogleSignin.getCurrentUser()?.user.id;
@@ -89,5 +89,3 @@ const styles = StyleSheet.create({
     color: 'white',
   },
 });
-
-export default Thoughts; 
