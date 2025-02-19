@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 type ThoughtCardProps = {
   thought: {
@@ -12,8 +12,6 @@ type ThoughtCardProps = {
 };
 
 const ThoughtCard: React.FC<ThoughtCardProps> = ({ thought, onPress }) => {
-  const [showAllTags, setShowAllTags] = useState(false);
-  const maxTagsToShow = 3;
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
@@ -67,10 +65,7 @@ const styles = StyleSheet.create({
     marginRight: 5,
     marginBottom: 5,
   },
-  showMore: {
-    color: '#007BFF',
-    marginLeft: 10,
-  },
+  
   noTags: {
     color: '#999',
     fontStyle: 'italic',
