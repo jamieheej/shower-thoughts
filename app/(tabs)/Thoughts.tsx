@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import db from '@/firebase/firebaseConfig'; 
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import ThoughtCard from '../../components/ThoughtCard';
+import ThoughtCard from '@/components/ThoughtCard';
 
 type Thought = {
     title: string;
@@ -14,7 +14,7 @@ type Thought = {
     tags: string[];
 }
 
-export default function Thoughts() {
+export default function ThoughtsScreen() {
   const router = useRouter();
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [allThoughts, setAllThoughts] = useState<Thought[]>([]);
@@ -34,11 +34,43 @@ export default function Thoughts() {
         thoughtsData.push({ id: doc.id, ...doc.data() } as Thought);
       });
       setAllThoughts(thoughtsData);
-      setThoughts(thoughtsData.slice(0, itemsPerPage));
+      // Don't set thoughts here, let the search effect handle it
     });
 
     return () => unsubscribe();
   }, [currentUserId]);
+
+  // Combined search and pagination effect
+  useEffect(() => {
+    let filteredResults = [...allThoughts];
+    
+    // Apply search filter if query exists
+    if (searchQuery.trim() !== '') {
+      filteredResults = allThoughts.filter(thought =>
+        thought.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        thought.content.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    // Apply pagination
+    const paginatedResults = filteredResults.slice(0, page * itemsPerPage);
+    setThoughts(paginatedResults);
+    
+  }, [searchQuery, allThoughts, page]);
+
+  // Handle search with debounce
+  useEffect(() => {
+    setLoading(true);
+    const handler = setTimeout(() => {
+      // Reset page when search changes
+      setPage(1);
+      setLoading(false);
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
 
   const loadMoreThoughts = () => {
     if (thoughts.length < allThoughts.length) {
@@ -49,34 +81,25 @@ export default function Thoughts() {
     }
   };
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setLoading(true);
-      if (searchQuery.trim() === '') {
-        setThoughts(allThoughts.slice(0, page * itemsPerPage));
-      } else {
-        const filteredThoughts = allThoughts.filter(thought =>
-          thought.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-          thought.content.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        setThoughts(filteredThoughts.slice(0, page * itemsPerPage));
-      }
-      setLoading(false);
-    }, 300);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [searchQuery, allThoughts, page]);
-
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Thoughts</Text>
-      <TextInput 
-        style={styles.searchBar} 
-        placeholder="Search thoughts..." 
-        onChangeText={text => setSearchQuery(text)}
-      />
+      <View style={styles.searchBarContainer}>
+        <TextInput 
+          style={styles.searchBar} 
+          placeholder="Search thoughts..." 
+          placeholderTextColor="#888"
+          onChangeText={text => setSearchQuery(text)}
+          value={searchQuery}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity 
+            style={styles.clearButton} 
+            onPress={() => setSearchQuery('')}
+          >
+            <Text style={styles.clearButtonText}>×</Text>
+          </TouchableOpacity>
+        )}
+      </View>
       {loading ? (
         <ActivityIndicator size="large" color="black" style={styles.loader} />
       ) : (
@@ -93,7 +116,7 @@ export default function Thoughts() {
           onEndReachedThreshold={0.5}
         />
       )}
-      <TouchableOpacity style={styles.floatingButton} onPress={() => router.replace("/(tabs)/NewThought")}>
+      <TouchableOpacity style={styles.floatingButton} onPress={() => router.push("/(tabs)/NewThought")}>
         <Text style={styles.buttonText}>+</Text>
       </TouchableOpacity>
     </View>
@@ -105,17 +128,34 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  searchBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 20,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 50,
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   searchBar: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 20,
-    paddingHorizontal: 10,
+    flex: 1,
+    height: 46,
+    fontSize: 16,
+    color: '#333',
+  },
+  clearButton: {
+    padding: 8,
+  },
+  clearButtonText: {
+    fontSize: 18,
+    color: '#888',
+    fontWeight: 'bold',
   },
   floatingButton: {
     position: 'absolute',
