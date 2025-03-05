@@ -5,8 +5,9 @@ import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity } from 'rea
 import db from '@/firebase/firebaseConfig'; // Adjust the import based on your Firebase setup
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
+import Tag from '@/components/Tag';
 
-const NewThought: React.FC = () => {
+export default function NewThoughtScreen() {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -79,7 +80,6 @@ const NewThought: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>New Thought</Text>
       <TextInput 
         style={styles.input} 
         placeholder="Title" 
@@ -87,9 +87,11 @@ const NewThought: React.FC = () => {
         onChangeText={setTitle}
       />
       <TextInput 
-        style={styles.input} 
+        style={styles.contentInput} 
         placeholder="Content" 
         multiline 
+        numberOfLines={6}
+        textAlignVertical="top"
         value={content} 
         onChangeText={setContent}
       />
@@ -102,15 +104,19 @@ const NewThought: React.FC = () => {
       />
       <View style={styles.tagContainer}>
         {tags.map((tag, index) => (
-          <View key={index} style={styles.tag}>
-            <Text>{tag}</Text>
-            <TouchableOpacity onPress={() => handleRemoveTag(tag)}>
-              <Text style={styles.removeTag}>x</Text>
-            </TouchableOpacity>
-          </View>
+          <Tag 
+            key={index} 
+            label={tag} 
+            onRemove={() => handleRemoveTag(tag)} 
+          />
         ))}
       </View>
-      <Button title="Save" onPress={handleSave} />
+      <TouchableOpacity 
+        style={styles.saveButton} 
+        onPress={handleSave}
+      >
+        <Text style={styles.saveButtonText}>Save</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -119,18 +125,32 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    backgroundColor: '#f8f9fa',
   },
   header: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    color: '#343a40',
   },
   input: {
     height: 40,
-    borderColor: 'gray',
+    borderColor: '#ced4da',
     borderWidth: 1,
+    borderRadius: 8,
     marginBottom: 20,
-    paddingHorizontal: 10,
+    paddingHorizontal: 15,
+    backgroundColor: '#ffffff',
+  },
+  contentInput: {
+    height: 150,
+    borderColor: '#ced4da',
+    borderWidth: 1,
+    borderRadius: 8,
+    marginBottom: 20,
+    paddingHorizontal: 15,
+    paddingTop: 10,
+    backgroundColor: '#ffffff',
   },
   tagContainer: {
     flexDirection: 'row',
@@ -138,16 +158,46 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   tag: {
-    backgroundColor: '#e0e0e0',
-    borderRadius: 15,
-    padding: 5,
-    marginRight: 10,
-    marginBottom: 10,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    marginRight: 6,
+    marginBottom: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tagText: {
+    color: '#4a5568',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  removeTagButton: {
+    marginLeft: 4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   removeTag: {
-    marginLeft: 5,
-    color: 'red',
+    color: '#4a5568',
+    fontWeight: 'bold',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  saveButton: {
+    backgroundColor: 'black',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  saveButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
-
-export default NewThought; 

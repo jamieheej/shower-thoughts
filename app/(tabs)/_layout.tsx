@@ -1,52 +1,54 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { Platform } from 'react-native';
+import { Tabs } from "expo-router";
+import { useTheme } from "../_layout";
 import { Ionicons } from '@expo/vector-icons';
 
-import { HapticTab } from '@/components/HapticTab';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
-
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+  const { theme } = useTheme();
+  
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
-        }),
-      }}>
-       <Tabs.Screen
-        name="new thought"
+        tabBarActiveTintColor: theme === 'dark' ? '#fff' : '#000',
+        tabBarInactiveTintColor: theme === 'dark' ? '#888' : '#999',
+        tabBarStyle: {
+          backgroundColor: theme === 'dark' ? '#121212' : '#fff',
+        },
+        tabBarShowLabel: false,
+        tabBarItemStyle: {
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingTop: 4,
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="Thoughts"
         options={{
-          title: 'New Thought',
-          tabBarIcon: ({ color }) => <Ionicons name="paper-plane" size={28} color={color} />,
+          title: "Thoughts",
+          headerShown: true,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="list" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="NewThought"
         options={{
-          title: 'Settings',
-          tabBarIcon: ({ color }) => <Ionicons name="settings" size={28} color={color} />,
+          title: "New Thought",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="add-circle" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="thoughts"
+        name="Settings"
         options={{
-          title: 'Thoughts',
-          tabBarIcon: ({ color }) => <Ionicons name="home" size={28} color={color} />,
+          title: "Settings",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="settings" size={size} color={color} />
+          ),
         }}
       />
     </Tabs>
   );
-}
+} 
