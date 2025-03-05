@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Button, Text, StyleSheet } from "react-native";
+import { View, Button, Text, StyleSheet, ImageBackground, TouchableOpacity } from "react-native";
 import {
   GoogleSignin,
   statusCodes,
@@ -10,16 +10,42 @@ import { collection, setDoc, doc } from "firebase/firestore";
 import db from "@/firebase/firebaseConfig";
 import { useRouter } from "expo-router";
 import { useUser } from "./(context)/UserContext";
+import { Video, ResizeMode } from 'expo-av';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "flex-end",
+    alignItems: "flex-start",
+    padding: 20,
   },
   button: {
     width: "100%",
     height: 44,
+    marginBottom: 20,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 50,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  background: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  appName: {
+    fontSize: 32,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  appDescription: {
+    fontSize: 16,
     marginBottom: 20,
   },
 });
@@ -98,25 +124,39 @@ export default function HomeScreen() {
   console.log(userInfo)
 
   return (
-    <View style={styles.container}>
-      <Text>Welcome to the App</Text>
-      {userInfo ? (
-        <>
-          <Text>Welcome, {userName}</Text>
-          <Button title="Logout" onPress={handleLogout} />
-        </>
-      ) : (
-        <>
-          <AppleAuthentication.AppleAuthenticationButton
-            buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-            buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-            cornerRadius={5}
-            style={styles.button}
-            onPress={handleAppleLogin}
-          />
-          <Button title="Login with Google" onPress={handleGoogleLogin} />
-        </>
-      )}
-    </View>
+    <>
+      <Video
+        source={require('@/assets/shower-bg.mp4')}
+        style={styles.background}
+        shouldPlay
+        isLooping
+        resizeMode={ResizeMode.COVER}
+      />
+      <View style={styles.container}>
+        <Text style={styles.appName}>ShowerThoughts</Text>
+        <Text style={styles.appDescription}>A place for your thoughts to flow.</Text>
+        {userInfo ? (
+          <>
+            <Text>Welcome, {userName}</Text>
+            <TouchableOpacity style={styles.button} onPress={handleLogout}>
+              <Text style={{ color: 'white' }}>Logout</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={5}
+              style={styles.button}
+              onPress={handleAppleLogin}
+            />
+            <TouchableOpacity style={styles.button} onPress={handleGoogleLogin}>
+              <Text style={{ color: 'white' }}>Login with Google</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    </>
   );
 };
