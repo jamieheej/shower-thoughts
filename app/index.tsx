@@ -1,10 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { View, Button, Text, StyleSheet, ImageBackground, TouchableOpacity } from "react-native";
-import {
-  GoogleSignin,
-  statusCodes,
-  type User,
-} from "@react-native-google-signin/google-signin";
+import React, { useEffect } from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { collection, setDoc, doc } from "firebase/firestore";
 import db from "@/firebase/firebaseConfig";
@@ -20,7 +16,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   button: {
-    width: "100%",
     height: 44,
     marginBottom: 20,
     backgroundColor: "black",
@@ -60,7 +55,7 @@ type UserData = {
   loginMethod: "apple" | "google" | null;
 };
 
-export default function HomeScreen() {
+const HomeScreen = () => {
   const router = useRouter();
   const { userInfo, setUserInfo, handleLogout } = useUser();
 
@@ -76,17 +71,8 @@ export default function HomeScreen() {
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
-      const userData = {
-        id: credential.user,
-        name: credential.fullName?.givenName ?? '',
-        email: credential.email ?? '',
-        photo: null,
-        familyName: credential.fullName?.familyName ?? null,
-        givenName: credential.fullName?.givenName ?? null,
-        loginMethod: "apple",
-      };
-      setUserInfo(userData);
-      await setDoc(doc(collection(db, "users"), userData.id), userData, { merge: true });
+      const userData = createUserData(credential, "apple");
+      await saveUserData(userData);
       router.push('/Thoughts');
     } catch (error: any) {
       handleAuthError(error);
@@ -100,13 +86,27 @@ export default function HomeScreen() {
       const userData = response.data?.user as UserData;
       if (userData) {
         userData.loginMethod = "google";
-        setUserInfo(userData);
-        await setDoc(doc(collection(db, "users"), userData.id), userData, { merge: true });
+        await saveUserData(userData);
         router.push('/Thoughts');
       }
     } catch (error: any) {
       handleAuthError(error);
     }
+  };
+
+  const createUserData = (credential: any, method: "apple" | "google"): UserData => ({
+    id: credential.user,
+    name: credential.fullName?.givenName ?? '',
+    email: credential.email ?? '',
+    photo: null,
+    familyName: credential.fullName?.familyName ?? null,
+    givenName: credential.fullName?.givenName ?? null,
+    loginMethod: method,
+  });
+
+  const saveUserData = async (userData: UserData) => {
+    setUserInfo(userData);
+    await setDoc(doc(collection(db, "users"), userData.id), userData, { merge: true });
   };
 
   const handleAuthError = (error: any) => {
@@ -121,7 +121,6 @@ export default function HomeScreen() {
   };
 
   const userName = userInfo?.name ?? "Guest";
-  console.log(userInfo)
 
   return (
     <>
@@ -160,3 +159,5 @@ export default function HomeScreen() {
     </>
   );
 };
+
+export default HomeScreen;

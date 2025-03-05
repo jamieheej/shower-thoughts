@@ -11,6 +11,7 @@ type Thought = {
     content: string;
     date: string;
     id: string;
+    tags: string[];
 }
 
 export default function Thoughts() {
