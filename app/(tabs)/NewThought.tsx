@@ -49,13 +49,13 @@ const NewThought: React.FC = () => {
 
   const handleAddTag = () => {
     if (tagInput && !tags.includes(tagInput)) {
-      setTags([...tags, tagInput]);
+      setTags(prevTags => [...prevTags, tagInput]);
       setTagInput('');
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
+    setTags(prevTags => prevTags.filter(tag => tag !== tagToRemove));
   };
 
   const handleSave = async () => {
@@ -64,13 +64,17 @@ const NewThought: React.FC = () => {
         await addDoc(collection(db, 'thoughts'), { title, content, userId, tags });
         await AsyncStorage.removeItem('draft'); // Clear draft after saving
         router.replace("/(tabs)/Thoughts");
-        setTitle("");
-        setContent("");
-        setTags([]);
+        resetForm();
       } catch (error) {
         console.error("Error saving thought: ", error);
       }
     }
+  };
+
+  const resetForm = () => {
+    setTitle("");
+    setContent("");
+    setTags([]);
   };
 
   return (
