@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Tag from './Tag';
 
 type ThoughtCardProps = {
   thought: {
@@ -20,7 +21,7 @@ const ThoughtCard: React.FC<ThoughtCardProps> = ({ thought, onPress }) => {
       <View style={styles.tagsContainer}>
         {thought.tags && thought.tags.length > 0 ? (
           thought.tags.map((tag, index) => (
-            <Text key={index} style={styles.tag}>{tag}</Text>
+            <Tag key={index} label={tag} />
           ))
         ) : (
           <Text style={styles.noTags}>No tags available</Text>
@@ -32,44 +33,42 @@ const ThoughtCard: React.FC<ThoughtCardProps> = ({ thought, onPress }) => {
 
 const styles = StyleSheet.create({
   card: {
-    padding: 15,
-    marginVertical: 10,
-    borderRadius: 8,
-    backgroundColor: '#f9f9f9',
+    padding: 16,
+    marginVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#333333',
   },
   content: {
     fontSize: 14,
-    color: '#333',
+    color: '#555555',
+    marginBottom: 12,
+    lineHeight: 20,
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 5,
+    marginTop: 8,
   },
-  tag: {
-    backgroundColor: '#e0e0e0',
-    borderRadius: 5,
-    padding: 5,
-    marginRight: 5,
-    marginBottom: 5,
-  },
-  
   noTags: {
-    color: '#999',
+    color: '#999999',
     fontStyle: 'italic',
-    marginTop: 5,
+    fontSize: 12,
   },
 });
 
