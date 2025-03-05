@@ -136,7 +136,6 @@ const HomeScreen = () => {
         <Text style={styles.appDescription}>A place for your thoughts to flow.</Text>
         {userInfo ? (
           <>
-            <Text>Welcome, {userName}</Text>
             <TouchableOpacity style={styles.button} onPress={handleLogout}>
               <Text style={{ color: 'white' }}>Logout</Text>
             </TouchableOpacity>
