@@ -5,6 +5,7 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import db from '@/firebase/firebaseConfig'; 
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import ThoughtCard from '@/components/ThoughtCard';
+import { useUser } from '../(context)/UserContext';
 
 type Thought = {
     title: string;
@@ -23,6 +24,71 @@ export default function ThoughtsScreen() {
   const [loading, setLoading] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
   const [itemsPerPage] = useState<number>(10);
+  const { theme } = useUser();
+
+
+const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 20,
+    },
+    searchBarContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 20,
+      borderColor: '#ddd',
+      borderWidth: 1,
+      borderRadius: 50,
+      backgroundColor: '#f5f5f5',
+      paddingHorizontal: 15,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 2,
+    },
+    searchBar: {
+      flex: 1,
+      height: 46,
+      fontSize: 16,
+      color: '#333',
+    },
+    clearButton: {
+      padding: 8,
+    },
+    clearButtonText: {
+      fontSize: 18,
+      color: '#888',
+      fontWeight: 'bold',
+    },
+    floatingButton: {
+      position: 'absolute',
+      width: 50,
+      height: 50,
+      bottom: 30,
+      right: 30,
+      borderRadius: 10,
+      padding: 10,
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    buttonText: {
+      fontSize: 24,
+      // color will be set dynamically in the TouchableOpacity
+    },
+    loader: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 30,
+    }
+  });
 
   useEffect(() => {
     const thoughtsRef = collection(db, 'thoughts');
@@ -82,12 +148,12 @@ export default function ThoughtsScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.searchBarContainer}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.searchBarContainer, { backgroundColor: theme.border }]}>
         <TextInput 
-          style={styles.searchBar} 
+          style={[styles.searchBar, { borderColor: theme.border, color: theme.text }]} 
           placeholder="Search thoughts..." 
-          placeholderTextColor="#888"
+          placeholderTextColor={theme.text}
           onChangeText={text => setSearchQuery(text)}
           value={searchQuery}
         />
@@ -116,73 +182,14 @@ export default function ThoughtsScreen() {
           onEndReachedThreshold={0.5}
         />
       )}
-      <TouchableOpacity style={styles.floatingButton} onPress={() => router.push("/(tabs)/NewThought")}>
-        <Text style={styles.buttonText}>+</Text>
+      <TouchableOpacity 
+        style={[styles.floatingButton, { backgroundColor: theme.text }]} // Use text color for background
+        onPress={() => router.push("/(tabs)/NewThought")}
+      >
+        <Text style={[styles.buttonText, { color: theme.buttonBackground }]}>+</Text> {/* Use button background color for text */}
       </TouchableOpacity>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  searchBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 50,
-    backgroundColor: '#f5f5f5',
-    paddingHorizontal: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  searchBar: {
-    flex: 1,
-    height: 46,
-    fontSize: 16,
-    color: '#333',
-  },
-  clearButton: {
-    padding: 8,
-  },
-  clearButtonText: {
-    fontSize: 18,
-    color: '#888',
-    fontWeight: 'bold',
-  },
-  floatingButton: {
-    position: 'absolute',
-    width: 50,
-    height: 50,
-    bottom: 30,
-    right: 30,
-    backgroundColor: 'black',
-    borderRadius: 10,
-    padding: 10,
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  buttonText: {
-    fontSize: 24,
-    color: 'white',
-  },
-  loader: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 30,
-  },
-});
+
