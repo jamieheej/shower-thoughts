@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { lightTheme, darkTheme } from '../theme';
 
 // Define the shape of the user context
 interface UserContextType {
     userInfo: any; // Replace 'any' with your user info type
     setUserInfo: React.Dispatch<React.SetStateAction<any>>; // Replace 'any' with your user info type
     handleLogout: () => Promise<void>;
+    theme: typeof lightTheme;
+    toggleTheme: () => void;
 }
 
 // Create a context for user information with a default value
@@ -17,7 +20,13 @@ interface UserProviderProps {
 
 // Create a provider component
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
+    console.log("UserProvider rendered"); // Debug log
     const [userInfo, setUserInfo] = useState<any>(null); // Replace 'any' with your user info type
+    const [theme, setTheme] = useState(lightTheme); // Default to light theme
+
+    const toggleTheme = () => {
+        setTheme((prevTheme) => (prevTheme === lightTheme ? darkTheme : lightTheme));
+    };
 
     const handleLogout = async () => {
         if (userInfo?.loginMethod === "apple") {
@@ -38,7 +47,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         console.log("User signed out from Google");
     };
 
-    const contextValue = { userInfo, setUserInfo, handleLogout };
+    const contextValue = { userInfo, setUserInfo, theme, toggleTheme, handleLogout };
 
     return (
         <UserContext.Provider value={contextValue}>
