@@ -101,6 +101,7 @@ export default function HomeScreen() {
         ],
       });
       const userData = createUserData(credential, "apple");
+      userData.loginMethod = "apple";
       await saveUserData(userData);
       router.push('/(tabs)/Thoughts');
     } catch (error: any) {
