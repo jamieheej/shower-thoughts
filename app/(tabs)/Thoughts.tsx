@@ -18,9 +18,10 @@ type Thought = {
 
 export default function ThoughtsScreen() {
   const router = useRouter();
+  const { userInfo } = useUser();
+  const currentUserId = userInfo?.id;
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [allThoughts, setAllThoughts] = useState<Thought[]>([]);
-  const currentUserId = GoogleSignin.getCurrentUser()?.user.id;
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
