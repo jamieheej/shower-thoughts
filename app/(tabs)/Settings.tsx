@@ -6,21 +6,19 @@ import { Ionicons } from "@expo/vector-icons";
 
 const SettingsScreen = () => {
   const router = useRouter();
-  const { handleLogout } = useUser();
+  const { handleLogout, toggleTheme, theme } = useUser();
 
   const handleLogoutAndNavigate = async () => {
     await handleLogout();
     router.replace('/Home');
   };
 
-  const handleThemeChange = () => {};
-
   const settingsOptions = [
     {
       id: '1',
       title: 'Change Theme',
       icon: 'color-palette',
-      onPress: handleThemeChange,
+      onPress: toggleTheme,
     },
     {
       id: '2',
@@ -31,18 +29,15 @@ const SettingsScreen = () => {
   ];
 
   const renderItem = ({ item }: { item: any }) => (
-    <TouchableOpacity 
-      style={styles.item}
-      onPress={item.onPress}
-    >
-      <Ionicons name={item.icon} size={24} color="#555" style={styles.icon} />
-      <Text style={styles.itemText}>{item.title}</Text>
+    <TouchableOpacity style={[styles.item, { backgroundColor: theme.background }]} onPress={item.onPress}>
+      <Ionicons name={item.icon} size={24} color={theme.text} style={styles.icon} />
+      <Text style={[styles.itemText, { color: theme.text }]}>{item.title}</Text>
       <Ionicons name="chevron-forward" size={20} color="#ccc" />
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <FlatList
         data={settingsOptions}
         renderItem={renderItem}
@@ -56,7 +51,6 @@ const SettingsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
   },
   listContainer: {
     padding: 16,

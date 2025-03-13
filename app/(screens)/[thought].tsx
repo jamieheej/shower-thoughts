@@ -5,6 +5,7 @@ import { doc, deleteDoc, getDoc, setDoc } from 'firebase/firestore';
 import db from '@/firebase/firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 import Tag from '@/components/Tag';
+import { useUser } from '../(context)/UserContext'; // Import useUser
 
 const Thought = () => {
   const localSearchParams = useLocalSearchParams();
@@ -13,6 +14,7 @@ const Thought = () => {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
+  const { theme } = useUser(); // Get the current theme
 
   useEffect(() => {
     const fetchThought = async () => {
@@ -57,15 +59,15 @@ const Thought = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton} 
           onPress={() => router.push('/(tabs)/Thoughts')}
         >
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>
+        <Text style={[styles.headerTitle, { color: theme.text }]} numberOfLines={1}>
           {thought.title}
         </Text>
         <View style={styles.headerRight} />
@@ -74,18 +76,18 @@ const Thought = () => {
       {isEditing ? (
         <>
           <TextInput
-            style={styles.titleInput}
+            style={[styles.titleInput, { borderColor: theme.border, color: theme.text }]}
             value={thought.title}
             onChangeText={(text) => setThought({ ...thought, title: text })}
           />
           <TextInput
-            style={styles.contentInput}
+            style={[styles.contentInput, { borderColor: theme.border, color: theme.text }]}
             value={thought.content}
             onChangeText={(text) => setThought({ ...thought, content: text })}
             multiline
           />
           <TextInput
-            style={styles.tagsInput}
+            style={[styles.tagsInput, { borderColor: theme.border, color: theme.text }]}
             value={tags.join(', ')}
             onChangeText={(text) => {
               const newTags = text.split(',').map(tag => tag.trim());
@@ -93,15 +95,16 @@ const Thought = () => {
               setThought({ ...thought, tags: newTags });
             }}
             placeholder="Enter tags separated by commas"
+            placeholderTextColor={theme.text}
           />
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.buttonText}>Save</Text>
+          <TouchableOpacity style={[styles.saveButton, { backgroundColor: theme.buttonBackground }]} onPress={handleSave}>
+            <Text style={[styles.buttonText, { color: theme.buttonText }]}>Save</Text>
           </TouchableOpacity>
         </>
       ) : (
         <>
-          <Text style={styles.title}>{thought.title}</Text>
-          <Text style={styles.content}>{thought.content}</Text>
+          <Text style={[styles.title, { color: theme.text }]}>{thought.title}</Text>
+          <Text style={[styles.content, { color: theme.text }]}>{thought.content}</Text>
           {thought.tags && (
             <View style={styles.tagsContainer}>
               {thought.tags.map((tag, index) => (
@@ -180,16 +183,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginVertical: 10,
-  },
-  tag: {
-    backgroundColor: '#f5f2e8',
-    borderRadius: 16,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    marginRight: 6,
-    marginBottom: 6,
-    borderWidth: 1,
-    borderColor: '#e8e2d0',
   },
   tagsInput: {
     fontSize: 16,

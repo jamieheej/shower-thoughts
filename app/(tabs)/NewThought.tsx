@@ -6,6 +6,7 @@ import db from '@/firebase/firebaseConfig'; // Adjust the import based on your F
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 import Tag from '@/components/Tag';
+import { useUser } from '../(context)/UserContext';
 
 export default function NewThoughtScreen() {
   const router = useRouter();
@@ -14,7 +15,77 @@ export default function NewThoughtScreen() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const userId = GoogleSignin.getCurrentUser()?.user.id;
+  const { theme } = useUser();
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 20,
+    },
+    input: {
+      height: 40,
+      borderWidth: 1,
+      borderRadius: 5,
+      paddingHorizontal: 10,
+      marginVertical: 10,
+    },
+    contentInput: {
+      height: 150,
+      borderWidth: 1,
+      borderRadius: 5,
+      paddingHorizontal: 10,
+      paddingTop: 10,
+    },
+    tagContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      marginBottom: 20,
+    },
+    tag: {
+      backgroundColor: '#e2e8f0',
+      borderRadius: 4,
+      paddingVertical: 2,
+      paddingHorizontal: 8,
+      marginRight: 6,
+      marginBottom: 6,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    tagText: {
+      color: '#4a5568',
+      fontSize: 12,
+      fontWeight: '500',
+    },
+    removeTagButton: {
+      marginLeft: 4,
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: 'rgba(0, 0, 0, 0.05)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    removeTag: {
+      color: '#4a5568',
+      fontWeight: 'bold',
+      fontSize: 12,
+      lineHeight: 16,
+    },
+    saveButton: {
+      backgroundColor: theme.buttonBackground,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginTop: 10,
+    },
+    saveButtonText: {
+      color: theme.buttonText,
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+  });
+  
   // Load draft on component mount
   useEffect(() => {
     const loadDraft = async () => {
@@ -79,30 +150,33 @@ export default function NewThoughtScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <TextInput 
-        style={styles.input} 
+        style={[styles.input, { borderColor: theme.border }]} 
         placeholder="Title" 
         value={title} 
         onChangeText={setTitle}
+        placeholderTextColor={theme.text}
       />
       <TextInput 
-        style={styles.contentInput} 
+        style={[styles.contentInput, { borderColor: theme.border }]} 
         placeholder="Content" 
         multiline 
         numberOfLines={6}
         textAlignVertical="top"
         value={content} 
         onChangeText={setContent}
+        placeholderTextColor={theme.text}
       />
       <TextInput 
-        style={styles.input} 
+        style={[styles.input, { borderColor: theme.border }]} 
         placeholder="Add a tag" 
         value={tagInput} 
         onChangeText={setTagInput}
         onSubmitEditing={handleAddTag}
+        placeholderTextColor={theme.text}
       />
-      <View style={styles.tagContainer}>
+      <View style={[styles.tagContainer, { backgroundColor: theme.background }]}>
         {tags.map((tag, index) => (
           <Tag 
             key={index} 
@@ -112,92 +186,11 @@ export default function NewThoughtScreen() {
         ))}
       </View>
       <TouchableOpacity 
-        style={styles.saveButton} 
+        style={[styles.saveButton, { backgroundColor: theme.buttonBackground }]} 
         onPress={handleSave}
       >
-        <Text style={styles.saveButtonText}>Save</Text>
+        <Text style={[styles.saveButtonText, { color: theme.buttonText }]}>Save</Text>
       </TouchableOpacity>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#343a40',
-  },
-  input: {
-    height: 40,
-    borderColor: '#ced4da',
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 20,
-    paddingHorizontal: 15,
-    backgroundColor: '#ffffff',
-  },
-  contentInput: {
-    height: 150,
-    borderColor: '#ced4da',
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 20,
-    paddingHorizontal: 15,
-    paddingTop: 10,
-    backgroundColor: '#ffffff',
-  },
-  tagContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 20,
-  },
-  tag: {
-    backgroundColor: '#e2e8f0',
-    borderRadius: 4,
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-    marginRight: 6,
-    marginBottom: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  tagText: {
-    color: '#4a5568',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  removeTagButton: {
-    marginLeft: 4,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeTag: {
-    color: '#4a5568',
-    fontWeight: 'bold',
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  saveButton: {
-    backgroundColor: 'black',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  saveButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
