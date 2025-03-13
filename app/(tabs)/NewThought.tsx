@@ -134,7 +134,6 @@ export default function NewThoughtScreen() {
   const handleSave = async () => {
     if (title && content) {
       try {
-        console.log(title, content, userId, tags);
         await addDoc(collection(db, 'thoughts'), { title, content, userId, tags });
         await AsyncStorage.removeItem('draft'); // Clear draft after saving
         router.replace("/(tabs)/Thoughts");
