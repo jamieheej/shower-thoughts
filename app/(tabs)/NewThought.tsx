@@ -10,11 +10,12 @@ import { useUser } from '../(context)/UserContext';
 
 export default function NewThoughtScreen() {
   const router = useRouter();
+  const { userInfo } = useUser();
+  const userId = userInfo?.id;
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
-  const userId = GoogleSignin.getCurrentUser()?.user.id;
   const { theme } = useUser();
 
   const styles = StyleSheet.create({
@@ -133,6 +134,7 @@ export default function NewThoughtScreen() {
   const handleSave = async () => {
     if (title && content) {
       try {
+        console.log(title, content, userId, tags);
         await addDoc(collection(db, 'thoughts'), { title, content, userId, tags });
         await AsyncStorage.removeItem('draft'); // Clear draft after saving
         router.replace("/(tabs)/Thoughts");
