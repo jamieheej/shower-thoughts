@@ -6,6 +6,7 @@ import db from '@/firebase/firebaseConfig';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import ThoughtCard from '@/components/ThoughtCard';
 import { useUser } from '../(context)/UserContext';
+import { Ionicons } from '@expo/vector-icons';
 
 type Thought = {
     title: string;
@@ -55,11 +56,6 @@ const styles = StyleSheet.create({
     },
     clearButton: {
       padding: 8,
-    },
-    clearButtonText: {
-      fontSize: 18,
-      color: '#888',
-      fontWeight: 'bold',
     },
     floatingButton: {
       position: 'absolute',
@@ -162,7 +158,7 @@ const styles = StyleSheet.create({
             style={styles.clearButton} 
             onPress={() => setSearchQuery('')}
           >
-            <Text style={styles.clearButtonText}>×</Text>
+            <Ionicons name="close" size={24} color={theme.text} />
           </TouchableOpacity>
         )}
       </View>
@@ -186,7 +182,7 @@ const styles = StyleSheet.create({
         style={[styles.floatingButton, { backgroundColor: theme.text }]} // Use text color for background
         onPress={() => router.push("/(tabs)/NewThought")}
       >
-        <Text style={[styles.buttonText, { color: theme.buttonBackground }]}>+</Text> {/* Use button background color for text */}
+        <Ionicons name="add" size={24} color={theme.buttonBackground} />
       </TouchableOpacity>
     </View>
   );
