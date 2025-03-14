@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { collection, setDoc, doc } from "firebase/firestore";
@@ -7,6 +7,7 @@ import db from "@/firebase/firebaseConfig";
 import { useRouter } from "expo-router";
 import { useUser } from "./(context)/UserContext";
 import { Video, ResizeMode } from 'expo-av';
+import { AntDesign } from '@expo/vector-icons';
 
 const styles = StyleSheet.create({
   container: {
@@ -17,6 +18,7 @@ const styles = StyleSheet.create({
   },
   button: {
     height: 44,
+    width: 200,
     marginBottom: 20,
     backgroundColor: "black",
     justifyContent: "center",
@@ -24,6 +26,12 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     paddingHorizontal: 20,
     paddingVertical: 10,
+  },
+  appleButton: {
+    height: 44,
+    width: 200,
+    marginBottom: 20,
+    borderRadius: 50,
   },
   background: {
     position: 'absolute',
@@ -42,6 +50,27 @@ const styles = StyleSheet.create({
   appDescription: {
     fontSize: 16,
     marginBottom: 20,
+  },
+  googleButton: {
+    height: 44,
+    width: 200,
+    marginBottom: 20,
+    backgroundColor: "black",
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 50,
+    color: "white",
+  },
+  googleIcon: {
+    width: 18,
+    height: 18,
+    marginRight: 8,
+  },
+  googleText: {
+    color: "white",
+    fontWeight: "500",
+    fontSize: 16,
   },
 });
 
@@ -72,6 +101,7 @@ export default function HomeScreen() {
         ],
       });
       const userData = createUserData(credential, "apple");
+      userData.loginMethod = "apple";
       await saveUserData(userData);
       router.push('/(tabs)/Thoughts');
     } catch (error: any) {
@@ -145,12 +175,13 @@ export default function HomeScreen() {
             <AppleAuthentication.AppleAuthenticationButton
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
               buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={5}
-              style={styles.button}
+              cornerRadius={50}
+              style={styles.appleButton}
               onPress={handleAppleLogin}
             />
-            <TouchableOpacity style={styles.button} onPress={handleGoogleLogin}>
-              <Text style={{ color: 'white' }}>Login with Google</Text>
+            <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
+              <AntDesign name="google" size={18} color="white" style={styles.googleIcon} />
+              <Text style={styles.googleText}>Sign in with Google</Text>
             </TouchableOpacity>
           </>
         )}

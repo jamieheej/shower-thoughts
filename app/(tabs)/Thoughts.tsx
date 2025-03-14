@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, TextInput, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Pressable } from 'react-native';
+import { useRouter, Link } from 'expo-router';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import db from '@/firebase/firebaseConfig'; 
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -18,9 +18,10 @@ type Thought = {
 
 export default function ThoughtsScreen() {
   const router = useRouter();
+  const { userInfo } = useUser();
+  const currentUserId = userInfo?.id;
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [allThoughts, setAllThoughts] = useState<Thought[]>([]);
-  const currentUserId = GoogleSignin.getCurrentUser()?.user.id;
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
@@ -68,6 +69,11 @@ const styles = StyleSheet.create({
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
+      zIndex: 999,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 3,
     },
     buttonText: {
       fontSize: 24,
@@ -87,6 +93,12 @@ const styles = StyleSheet.create({
   });
 
   useEffect(() => {
+    if (!currentUserId) {
+      // If user is not logged in, redirect to Home or handle accordingly
+      router.push('/'); // Redirect to Home or login screen
+      return; // Exit early
+    }
+
     const thoughtsRef = collection(db, 'thoughts');
     const q = query(thoughtsRef, where('userId', '==', currentUserId));
 
@@ -179,8 +191,10 @@ const styles = StyleSheet.create({
         />
       )}
       <TouchableOpacity 
-        style={[styles.floatingButton, { backgroundColor: theme.text }]} // Use text color for background
-        onPress={() => router.push("/(tabs)/NewThought")}
+        style={[styles.floatingButton, { backgroundColor: theme.text }]}
+        onPress={() => router.push("/NewThought")}
+        activeOpacity={0.7}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <Ionicons name="add" size={24} color={theme.buttonBackground} />
       </TouchableOpacity>

@@ -4,21 +4,18 @@ import { useUser } from "../(context)/UserContext"; // Ensure this import is cor
 import { ThemeProvider } from "@react-navigation/native";
 import { DarkTheme, DefaultTheme } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
-import HomeScreen from "../Home";
 import ThoughtsScreen from "./Thoughts";
-import NewThoughtScreen from "./NewThought";
 import SettingsScreen from "./Settings";
+import NewThoughtScreen from "../NewThought";
 import { Ionicons } from '@expo/vector-icons'; // Import Ionicons
-import { useColorScheme } from "@/hooks/useColorScheme";
 
 const Tab = createBottomTabNavigator();
 
 export default function TabLayout() {
-  const { theme } = useUser(); // Get the current theme
-  const colorScheme = useColorScheme();
+  const { theme, isDarkTheme } = useUser(); // Get the current theme
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={isDarkTheme ? DarkTheme : DefaultTheme}>
       <Tab.Navigator
         screenOptions={{
           tabBarStyle: { backgroundColor: theme.background, borderTopColor: theme.border },
@@ -61,7 +58,7 @@ export default function TabLayout() {
           }} 
         />
       </Tab.Navigator>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style={isDarkTheme ? 'light' : 'dark'} />
     </ThemeProvider>
   );
 } 
