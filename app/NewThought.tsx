@@ -6,7 +6,7 @@ import db from '@/firebase/firebaseConfig'; // Adjust the import based on your F
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 import Tag from '@/components/Tag';
-import { useUser } from '../(context)/UserContext';
+import { useUser } from './(context)/UserContext';
 
 export default function NewThoughtScreen() {
   const router = useRouter();
