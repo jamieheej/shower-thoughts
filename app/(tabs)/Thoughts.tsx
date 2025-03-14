@@ -93,6 +93,12 @@ const styles = StyleSheet.create({
   });
 
   useEffect(() => {
+    if (!currentUserId) {
+      // If user is not logged in, redirect to Home or handle accordingly
+      router.push('/'); // Redirect to Home or login screen
+      return; // Exit early
+    }
+
     const thoughtsRef = collection(db, 'thoughts');
     const q = query(thoughtsRef, where('userId', '==', currentUserId));
 
