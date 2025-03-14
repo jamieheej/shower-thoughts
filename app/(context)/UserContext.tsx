@@ -9,6 +9,7 @@ interface UserContextType {
     handleLogout: () => Promise<void>;
     theme: typeof lightTheme;
     toggleTheme: () => void;
+    isDarkTheme: boolean; // Added to indicate if dark theme is active
 }
 
 // Create a context for user information with a default value
@@ -27,6 +28,9 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     const toggleTheme = () => {
         setTheme((prevTheme) => (prevTheme === lightTheme ? darkTheme : lightTheme));
     };
+
+    // Determine if current theme is dark
+    const isDarkTheme = theme === darkTheme;
 
     const handleLogout = async () => {
         if (userInfo?.loginMethod === "apple") {
@@ -47,7 +51,14 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         console.log("User signed out from Google");
     };
 
-    const contextValue = { userInfo, setUserInfo, theme, toggleTheme, handleLogout };
+    const contextValue = { 
+        userInfo, 
+        setUserInfo, 
+        theme, 
+        toggleTheme, 
+        handleLogout,
+        isDarkTheme 
+    };
 
     return (
         <UserContext.Provider value={contextValue}>
