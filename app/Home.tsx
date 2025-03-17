@@ -3,12 +3,12 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { collection, setDoc, doc } from "firebase/firestore";
-import db from "@/firebase/firebaseConfig";
+import db, { auth } from "@/firebase/firebaseConfig";
 import { useRouter } from "expo-router";
 import { useUser } from "./(context)/UserContext";
 import { Video, ResizeMode } from 'expo-av';
 import { AntDesign } from '@expo/vector-icons';
-
+import { getAuth, signInWithCredential, GoogleAuthProvider } from "firebase/auth";
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -113,8 +113,13 @@ export default function HomeScreen() {
     try {
       await GoogleSignin.hasPlayServices();
       const response = await GoogleSignin.signIn();
-      const userData = response.data?.user as UserData;
-      if (userData) {
+
+      const auth = getAuth();
+      const googleCredential = GoogleAuthProvider.credential(response.data?.idToken);
+      await signInWithCredential(auth, googleCredential);
+    
+      if (response.data?.user) {
+        const userData = response.data.user as UserData;
         userData.loginMethod = "google";
         await saveUserData(userData);
         router.push('/(tabs)/Thoughts');
@@ -135,8 +140,24 @@ export default function HomeScreen() {
   });
 
   const saveUserData = async (userData: UserData) => {
-    setUserInfo(userData);
-    await setDoc(doc(collection(db, "users"), userData.id), userData, { merge: true });
+    try {
+      setUserInfo(userData);
+      
+      // Get the current Firebase user
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error("No Firebase user found");
+      }
+            
+      await setDoc(doc(collection(db, "users"), currentUser.uid), {
+        ...userData,
+        id: currentUser.uid
+      }, { merge: true });
+      
+    } catch (error) {
+      console.error("Error saving user data:", error);
+      throw error;
+    }
   };
 
   const handleAuthError = (error: any) => {
