@@ -8,7 +8,7 @@ import { useRouter } from "expo-router";
 import { useUser } from "./(context)/UserContext";
 import { Video, ResizeMode } from 'expo-av';
 import { AntDesign } from '@expo/vector-icons';
-import { getAuth, signInWithCredential, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, signInWithCredential, GoogleAuthProvider, OAuthProvider } from "firebase/auth";
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -100,8 +100,23 @@ export default function HomeScreen() {
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
+      
+      // Create a Firebase credential from the Apple authentication
+      const { identityToken } = credential;
+      if (!identityToken) throw new Error("No identity token provided");
+      
+      // Sign in to Firebase with the Apple credential
+      const provider = new OAuthProvider('apple.com');
+      const authCredential = provider.credential({
+        idToken: identityToken,
+//        rawNonce: /* provide a nonce if you generated one */,
+      });
+      
+      // Sign in to Firebase
+      await signInWithCredential(auth, authCredential);
+      
+      // Now auth.currentUser should be available
       const userData = createUserData(credential, "apple");
-      userData.loginMethod = "apple";
       await saveUserData(userData);
       router.push('/(tabs)/Thoughts');
     } catch (error: any) {
