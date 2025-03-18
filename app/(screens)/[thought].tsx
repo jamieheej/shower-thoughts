@@ -6,6 +6,7 @@ import db from '@/firebase/firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 import Tag from '@/components/Tag';
 import { useUser } from '../(context)/UserContext'; // Import useUser
+import { auth } from '@/firebase/firebaseConfig';
 
 const Thought = () => {
   const localSearchParams = useLocalSearchParams();
@@ -30,11 +31,36 @@ const Thought = () => {
 
   const handleDelete = async () => {
     try {
+      // First, check if the current user is the owner of this thought
+      const { currentUser } = auth;
+      if (!currentUser) {
+        Alert.alert('Error', 'You must be logged in to delete a thought');
+        return;
+      }
+
+      // Get the thought data to check ownership
+      const thoughtRef = doc(db, 'thoughts', id);
+      const thoughtSnap = await getDoc(thoughtRef);
+      const thoughtData = thoughtSnap.data();
+      
+      // Log for debugging
+      console.log('Current user UID:', currentUser.uid);
+      console.log('Thought user ID:', thoughtData?.userId);
+      
+      // Check if the current user is the owner of this thought
+      if (thoughtData?.userId !== currentUser.uid) {
+        // If using a different ID system, you might need to adjust this comparison
+        Alert.alert('Error', 'You can only delete your own thoughts');
+        return;
+      }
+      
+      // Proceed with deletion
       await deleteDoc(doc(db, 'thoughts', id));
       Alert.alert('Success', 'Thought deleted successfully');
       router.push('/(tabs)/Thoughts');
     } catch (error) {
       Alert.alert('Error', 'Failed to delete thought');
+      console.error('Error deleting thought:', error);
     }
   };
 
