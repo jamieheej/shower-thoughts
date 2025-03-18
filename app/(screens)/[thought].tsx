@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Tag from '@/components/Tag';
 import { useUser } from '../(context)/UserContext'; // Import useUser
 import { auth } from '@/firebase/firebaseConfig';
+import Constants from 'expo-constants';
 
 const Thought = () => {
   const localSearchParams = useLocalSearchParams();
@@ -86,7 +87,7 @@ const Thought = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Constants.statusBarHeight }]}>
         <TouchableOpacity 
           style={styles.backButton} 
           onPress={() => router.push('/(tabs)/Thoughts')}
