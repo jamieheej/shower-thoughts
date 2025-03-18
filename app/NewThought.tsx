@@ -168,14 +168,14 @@ export default function NewThoughtScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <TextInput 
-        style={[styles.input, { borderColor: theme.border }]} 
+        style={[styles.input, { borderColor: theme.border, color: theme.text }]} 
         placeholder="Title" 
         value={title} 
         onChangeText={setTitle}
         placeholderTextColor={theme.text}
       />
       <TextInput 
-        style={[styles.contentInput, { borderColor: theme.border }]} 
+        style={[styles.contentInput, { borderColor: theme.border, color: theme.text }]} 
         placeholder="Content" 
         multiline 
         numberOfLines={6}
@@ -185,7 +185,7 @@ export default function NewThoughtScreen() {
         placeholderTextColor={theme.text}
       />
       <TextInput 
-        style={[styles.input, { borderColor: theme.border }]} 
+        style={[styles.input, { borderColor: theme.border, color: theme.text }]} 
         placeholder="Add a tag" 
         value={tagInput} 
         onChangeText={setTagInput}
