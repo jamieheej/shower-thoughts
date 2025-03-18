@@ -7,11 +7,10 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 import Tag from '@/components/Tag';
 import { useUser } from './(context)/UserContext';
-
+import { getAuth } from 'firebase/auth';
 export default function NewThoughtScreen() {
   const router = useRouter();
-  const { userInfo } = useUser();
-  const userId = userInfo?.id;
+  const userId = getAuth().currentUser?.uid;
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -134,12 +133,28 @@ export default function NewThoughtScreen() {
   const handleSave = async () => {
     if (title && content) {
       try {
-        await addDoc(collection(db, 'thoughts'), { title, content, userId, tags });
+        if (!userId) {
+          console.error("User not authenticated");
+          // You might want to show an error message to the user
+          return;
+        }
+        
+        // Add timestamp and ensure userId is included
+        const thoughtData = { 
+          title, 
+          content, 
+          userId, 
+          tags,
+          createdAt: new Date(),
+        };
+        
+        await addDoc(collection(db, 'thoughts'), thoughtData);
         await AsyncStorage.removeItem('draft'); // Clear draft after saving
         router.replace("/(tabs)/Thoughts");
         resetForm();
       } catch (error) {
         console.error("Error saving thought: ", error);
+        // You might want to show an error message to the user
       }
     }
   };
