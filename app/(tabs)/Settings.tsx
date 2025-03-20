@@ -1,16 +1,38 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, FlatList } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Button, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useUser } from "../(context)/UserContext";
 import { Ionicons } from "@expo/vector-icons";
 
 const SettingsScreen = () => {
   const router = useRouter();
-  const { handleLogout, toggleTheme, theme } = useUser();
+  const { handleLogout, toggleTheme, theme, deleteUserAccount } = useUser();
 
   const handleLogoutAndNavigate = async () => {
     await handleLogout();
     router.replace('/Home');
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to delete your account? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          onPress: async () => {
+            try {
+              await deleteUserAccount();
+              Alert.alert("Account deleted successfully.");
+              router.replace('/Home');
+            } catch (error: any) {
+              Alert.alert("Error deleting account:", error.message);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const settingsOptions = [
@@ -44,6 +66,7 @@ const SettingsScreen = () => {
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
       />
+      <Button title="Delete Account" onPress={handleDeleteAccount} />
     </View>
   );
 };

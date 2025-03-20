@@ -7,6 +7,7 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import ThoughtCard from '@/components/ThoughtCard';
 import { useUser } from '../(context)/UserContext';
 import { Ionicons } from '@expo/vector-icons';
+import { getAuth } from 'firebase/auth';
 
 type Thought = {
     title: string;
@@ -18,8 +19,7 @@ type Thought = {
 
 export default function ThoughtsScreen() {
   const router = useRouter();
-  const { userInfo } = useUser();
-  const currentUserId = userInfo?.id;
+  const currentUserId = getAuth().currentUser?.uid;
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [allThoughts, setAllThoughts] = useState<Thought[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
