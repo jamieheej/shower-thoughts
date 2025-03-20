@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { lightTheme, darkTheme } from '../theme';
+import { getAuth } from "firebase/auth";
+import { deleteDoc, doc, collection, query, where, getDocs } from "firebase/firestore";
+import db from '@/firebase/firebaseConfig';
 
 // Define the shape of the user context
 interface UserContextType {
@@ -10,6 +13,7 @@ interface UserContextType {
     theme: typeof lightTheme;
     toggleTheme: () => void;
     isDarkTheme: boolean; // Added to indicate if dark theme is active
+    deleteUserAccount: () => Promise<void>;
 }
 
 // Create a context for user information with a default value
@@ -51,13 +55,51 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         console.log("User signed out from Google");
     };
 
+    const deleteUserAccount = async () => {
+        const auth = getAuth();
+        const user = auth.currentUser;
+
+        if (user) {
+            try {
+                const thoughtsRef = collection(db, "thoughts");
+                const q = query(thoughtsRef, where("userId", "==", user.uid));
+                const querySnapshot = await getDocs(q);
+
+                console.debug(`Found ${querySnapshot.size} thoughts for user ${user.uid}.`);
+
+                if (querySnapshot.empty) {
+                    console.debug("No thoughts found for this user.");
+                } else {
+                    const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+                    await Promise.all(deletePromises);
+                    console.debug("All thoughts deleted successfully.");
+                }
+
+                await deleteDoc(doc(collection(db, "users"), user.uid));
+                console.debug("User document deleted from Firestore.");
+
+                // Delete user from Firebase Auth
+                await user.delete();
+                console.debug("User deleted from Firebase Auth.");
+
+                setUserInfo(null);
+            } catch (error) {
+                console.error("Error deleting user account:", error);
+                throw error; 
+            }
+        } else {
+            console.error("No user is currently logged in.");
+        }
+    };
+
     const contextValue = { 
         userInfo, 
         setUserInfo, 
         theme, 
         toggleTheme, 
         handleLogout,
-        isDarkTheme 
+        isDarkTheme,
+        deleteUserAccount
     };
 
     return (
