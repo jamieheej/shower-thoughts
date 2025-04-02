@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { lightTheme, darkTheme } from '../theme';
 import { getAuth } from "firebase/auth";
 import { deleteDoc, doc, collection, query, where, getDocs } from "firebase/firestore";
 import db from '@/firebase/firebaseConfig';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Define the shape of the user context
 interface UserContextType {
@@ -14,6 +15,9 @@ interface UserContextType {
     toggleTheme: () => void;
     isDarkTheme: boolean; // Added to indicate if dark theme is active
     deleteUserAccount: () => Promise<void>;
+    isGuestMode: boolean;
+    enableGuestMode: () => void;
+    disableGuestMode: () => void;
 }
 
 // Create a context for user information with a default value
@@ -25,9 +29,10 @@ interface UserProviderProps {
 
 // Create a provider component
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
-    console.log("UserProvider rendered"); // Debug log
+    console.log("UserProvider rendering");
     const [userInfo, setUserInfo] = useState<any>(null); // Replace 'any' with your user info type
     const [theme, setTheme] = useState(lightTheme); // Default to light theme
+    const [isGuestMode, setIsGuestMode] = useState<boolean>(false);
 
     const toggleTheme = () => {
         setTheme((prevTheme) => (prevTheme === lightTheme ? darkTheme : lightTheme));
@@ -37,10 +42,28 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     const isDarkTheme = theme === darkTheme;
 
     const handleLogout = async () => {
-        if (userInfo?.loginMethod === "apple") {
-            await handleAppleLogout();
-        } else if (userInfo?.loginMethod === "google") {
-            await handleGoogleLogout();
+        try {
+            // Clear guest mode first
+            await AsyncStorage.removeItem('isGuestMode');
+            setIsGuestMode(false);
+            
+            // Then handle regular logout
+            if (userInfo?.loginMethod === "apple") {
+                await handleAppleLogout();
+            } else if (userInfo?.loginMethod === "google") {
+                await handleGoogleLogout();
+            }
+            
+            // Sign out from Firebase Auth
+            const auth = getAuth();
+            await auth.signOut();
+            
+            // Clear user info last
+            setUserInfo(null);
+            
+            console.log("User signed out completely");
+        } catch (error) {
+            console.error("Error during logout:", error);
         }
     };
 
@@ -92,6 +115,15 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         }
     };
 
+    const enableGuestMode = useCallback(() => {
+        console.log("enableGuestMode called");
+        setIsGuestMode(true);
+    }, []);
+    
+    const disableGuestMode = useCallback(() => {
+        setIsGuestMode(false);
+    }, []);
+
     const contextValue = { 
         userInfo, 
         setUserInfo, 
@@ -99,8 +131,37 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         toggleTheme, 
         handleLogout,
         isDarkTheme,
-        deleteUserAccount
+        deleteUserAccount,
+        isGuestMode,
+        enableGuestMode,
+        disableGuestMode
     };
+
+    console.log("isGuestMode:", isGuestMode);
+
+    useEffect(() => {
+        const auth = getAuth();
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+            if (user) {
+                // Only update if not in guest mode
+                if (!isGuestMode) {
+                    const userData = {
+                        id: user.uid,
+                        email: user.email || '',
+                        name: user.displayName || '',
+                        photo: user.photoURL,
+                        loginMethod: userInfo?.loginMethod || null,
+                    };
+                    setUserInfo(userData);
+                }
+            } else if (!isGuestMode) {
+                // No user is signed in with Firebase and not in guest mode
+                setUserInfo(null);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [isGuestMode]);
 
     return (
         <UserContext.Provider value={contextValue}>

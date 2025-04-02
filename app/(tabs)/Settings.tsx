@@ -6,7 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 const SettingsScreen = () => {
   const router = useRouter();
-  const { handleLogout, toggleTheme, theme, deleteUserAccount } = useUser();
+  const { handleLogout, toggleTheme, theme, deleteUserAccount, isGuestMode, disableGuestMode } = useUser();
 
   const handleLogoutAndNavigate = async () => {
     await handleLogout();
@@ -35,7 +35,25 @@ const SettingsScreen = () => {
     );
   };
 
-  const settingsOptions = [
+  const handleSignIn = () => {
+    disableGuestMode();
+    router.push('/Home');
+  };
+
+  const settingsOptions = isGuestMode ? [
+    {
+      id: '1',
+      title: 'Change Theme',
+      icon: 'color-palette',
+      onPress: toggleTheme,
+    },
+    {
+      id: '2',
+      title: 'Sign In',
+      icon: 'log-in',
+      onPress: handleSignIn,
+    },
+  ] : [
     {
       id: '1',
       title: 'Change Theme',
@@ -66,7 +84,7 @@ const SettingsScreen = () => {
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
       />
-      <Button title="Delete Account" onPress={handleDeleteAccount} />
+      {!isGuestMode && <Button title="Delete Account" onPress={handleDeleteAccount} />}
     </View>
   );
 };
