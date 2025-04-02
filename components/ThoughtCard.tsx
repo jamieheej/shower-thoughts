@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Share, Alert } from 'react-native';
 import Tag from './Tag';
 import { useUser } from '@/app/(context)/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDate } from '@/utils/dateUtils';
+import { shareThought } from '@/utils/shareUtils';
 
 type ThoughtCardProps = {
   thought: {
@@ -72,6 +73,14 @@ const ThoughtCard = ({ thought, onPress, onToggleFavorite }: ThoughtCardProps) =
       fontStyle: 'italic',
       fontSize: 12,
     },
+    actions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    actionButton: {
+      padding: 4,
+      marginLeft: 8,
+    },
   });
   
   return (
@@ -81,19 +90,32 @@ const ThoughtCard = ({ thought, onPress, onToggleFavorite }: ThoughtCardProps) =
     >
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text }]}>{thought.title}</Text>
-        <TouchableOpacity 
-          onPress={(e) => {
-            e.stopPropagation(); // Prevent triggering the card's onPress
-            onToggleFavorite();
-          }}
-          style={styles.favoriteButton}
-        >
-          <Ionicons 
-            name={thought.favorite ? "heart" : "heart-outline"} 
-            size={24} 
-            color={thought.favorite ? theme.text : theme.text} 
-          />
-        </TouchableOpacity>
+        <View style={styles.actions}>
+          <TouchableOpacity 
+            onPress={(e) => {
+              e.stopPropagation();
+              onToggleFavorite();
+            }}
+            style={styles.actionButton}
+          >
+            <Ionicons 
+              name={thought.favorite ? "heart" : "heart-outline"} 
+              size={24} 
+              color={thought.favorite ? theme.text : theme.text} 
+            />
+          </TouchableOpacity>
+          
+          {/* Add Share Button */}
+          <TouchableOpacity 
+            onPress={(e) => {
+              e.stopPropagation();
+              shareThought(thought);
+            }}
+            style={styles.actionButton}
+          >
+            <Ionicons name="share-outline" size={20} color={theme.text} />
+          </TouchableOpacity>
+        </View>
       </View>
       <Text style={[styles.date, { color: theme.secondary }]}>
         {formatDate(thought.date)}

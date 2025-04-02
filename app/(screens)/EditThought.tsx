@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Share } from 'react-native';
 import db from '@/firebase/firebaseConfig';
 import { useUser } from '../(context)/UserContext';
 import { getLocalThoughts, updateLocalThought } from '@/utils/localStorageService';
 import Tag from '@/components/Tag';
 import { Ionicons } from '@expo/vector-icons';
+import { shareThought } from '@/utils/shareUtils';
 
 export default function EditThoughtScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -154,13 +155,22 @@ export default function EditThoughtScreen() {
         
         <Text style={[styles.headerTitle, { color: theme.text }]}>Edit Thought</Text>
         
-        <TouchableOpacity onPress={toggleFavorite} style={styles.favoriteButton}>
-          <Ionicons 
-            name={favorite ? "heart" : "heart-outline"} 
-            size={24} 
-            color={theme.text} 
-          />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={toggleFavorite} style={styles.actionButton}>
+            <Ionicons 
+              name={favorite ? "heart" : "heart-outline"} 
+              size={24} 
+              color={theme.text} 
+            />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            onPress={() => shareThought({ title, content, tags })}
+            style={styles.actionButton}
+          >
+            <Ionicons name="share-outline" size={24} color={theme.text} />
+          </TouchableOpacity>
+        </View>
       </View>
       
       <TextInput 
@@ -238,7 +248,11 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
   },
-  favoriteButton: {
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
     padding: 8,
   },
   input: {
