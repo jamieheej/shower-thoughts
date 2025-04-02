@@ -330,7 +330,8 @@ const createTestThought = async (userId: string) => {
       content: "This is your first thought. Tap the + button to add more.",
       date: new Date().toISOString(),
       userId: userId,
-      tags: ["welcome"]
+      tags: ["welcome"],
+      favorite: false
     });
     console.log("Test thought created");
   } catch (error) {

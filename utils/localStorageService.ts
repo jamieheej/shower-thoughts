@@ -5,26 +5,22 @@ export type LocalThought = {
   title: string;
   content: string;
   date: string;
+  userId: string;
   tags: string[];
+  favorite?: boolean;
 };
+
+const THOUGHTS_STORAGE_KEY = "local_thoughts";
 
 export const saveLocalThought = async (
   thought: LocalThought
 ): Promise<void> => {
   try {
-    // Get existing thoughts
-    const existingThoughtsJSON = await AsyncStorage.getItem("localThoughts");
-    const existingThoughts: LocalThought[] = existingThoughtsJSON
-      ? JSON.parse(existingThoughtsJSON)
-      : [];
-
-    // Add new thought
-    existingThoughts.push(thought);
-
-    // Save back to storage
+    const existingThoughts = await getLocalThoughts();
+    const updatedThoughts = [...existingThoughts, thought];
     await AsyncStorage.setItem(
-      "localThoughts",
-      JSON.stringify(existingThoughts)
+      THOUGHTS_STORAGE_KEY,
+      JSON.stringify(updatedThoughts)
     );
   } catch (error) {
     console.error("Error saving local thought:", error);
@@ -32,13 +28,40 @@ export const saveLocalThought = async (
   }
 };
 
+export const saveLocalThoughts = async (
+  thoughts: LocalThought[]
+): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(THOUGHTS_STORAGE_KEY, JSON.stringify(thoughts));
+  } catch (error) {
+    console.error("Error saving local thoughts:", error);
+    throw error;
+  }
+};
+
 export const getLocalThoughts = async (): Promise<LocalThought[]> => {
   try {
-    const thoughtsJSON = await AsyncStorage.getItem("localThoughts");
-    return thoughtsJSON ? JSON.parse(thoughtsJSON) : [];
+    const thoughts = await AsyncStorage.getItem(THOUGHTS_STORAGE_KEY);
+    return thoughts ? JSON.parse(thoughts) : [];
   } catch (error) {
     console.error("Error getting local thoughts:", error);
     return [];
+  }
+};
+
+export const deleteLocalThought = async (thoughtId: string): Promise<void> => {
+  try {
+    const thoughts = await getLocalThoughts();
+    const updatedThoughts = thoughts.filter(
+      (thought) => thought.id !== thoughtId
+    );
+    await AsyncStorage.setItem(
+      THOUGHTS_STORAGE_KEY,
+      JSON.stringify(updatedThoughts)
+    );
+  } catch (error) {
+    console.error("Error deleting local thought:", error);
+    throw error;
   }
 };
 
@@ -46,51 +69,16 @@ export const updateLocalThought = async (
   updatedThought: LocalThought
 ): Promise<void> => {
   try {
-    const existingThoughtsJSON = await AsyncStorage.getItem("localThoughts");
-    const existingThoughts: LocalThought[] = existingThoughtsJSON
-      ? JSON.parse(existingThoughtsJSON)
-      : [];
-
-    // Check if the thought exists before updating
-    const thoughtExists = existingThoughts.some(
-      (thought) => thought.id === updatedThought.id
-    );
-    if (!thoughtExists) {
-      console.error(`Thought with ID ${updatedThought.id} not found`);
-      throw new Error(`Thought with ID ${updatedThought.id} not found`);
-    }
-
-    const updatedThoughts = existingThoughts.map((thought) =>
+    const thoughts = await getLocalThoughts();
+    const updatedThoughts = thoughts.map((thought) =>
       thought.id === updatedThought.id ? updatedThought : thought
     );
-
     await AsyncStorage.setItem(
-      "localThoughts",
+      THOUGHTS_STORAGE_KEY,
       JSON.stringify(updatedThoughts)
     );
   } catch (error) {
     console.error("Error updating local thought:", error);
-    throw error;
-  }
-};
-
-export const deleteLocalThought = async (thoughtId: string): Promise<void> => {
-  try {
-    const existingThoughtsJSON = await AsyncStorage.getItem("localThoughts");
-    const existingThoughts: LocalThought[] = existingThoughtsJSON
-      ? JSON.parse(existingThoughtsJSON)
-      : [];
-
-    const updatedThoughts = existingThoughts.filter(
-      (thought) => thought.id !== thoughtId
-    );
-
-    await AsyncStorage.setItem(
-      "localThoughts",
-      JSON.stringify(updatedThoughts)
-    );
-  } catch (error) {
-    console.error("Error deleting local thought:", error);
     throw error;
   }
 };

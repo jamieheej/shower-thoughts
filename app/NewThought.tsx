@@ -164,6 +164,7 @@ export default function NewThoughtScreen() {
         date: new Date().toISOString(),
         userId: userId || 'guest',
         tags: tags,
+        favorite: false,
       };
       
       if (isGuestMode) {
@@ -173,7 +174,6 @@ export default function NewThoughtScreen() {
         // Save to Firestore for authenticated users
         await addDoc(collection(db, 'thoughts'), newThought);
       }
-      
       router.back();
     } catch (error) {
       console.error("Error saving thought:", error);
