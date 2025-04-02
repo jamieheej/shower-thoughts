@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useUser } from '@/app/(context)/UserContext';
 
 type TagProps = {
   label: string;
@@ -7,12 +8,20 @@ type TagProps = {
 };
 
 const Tag: React.FC<TagProps> = ({ label, onRemove }) => {
+  const { theme } = useUser();
+  
   return (
-    <View style={styles.tag}>
-      <Text style={styles.tagText}>{label}</Text>
+    <View style={[
+      styles.tag, 
+      { 
+        backgroundColor: theme.tagBackground,
+        borderColor: theme.border
+      }
+    ]}>
+      <Text style={[styles.tagText, { color: theme.tagText }]}>{label}</Text>
       {onRemove && (
         <TouchableOpacity onPress={onRemove} style={styles.removeButton}>
-          <Text style={styles.removeText}>×</Text>
+          <Text style={[styles.removeText, { color: theme.tagText }]}>×</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -21,19 +30,16 @@ const Tag: React.FC<TagProps> = ({ label, onRemove }) => {
 
 const styles = StyleSheet.create({
   tag: {
-    backgroundColor: '#f5f2e8',
     borderRadius: 16,
     paddingVertical: 4,
     paddingHorizontal: 10,
     marginRight: 6,
     marginBottom: 6,
     borderWidth: 1,
-    borderColor: '#e8e2d0',
     flexDirection: 'row',
     alignItems: 'center',
   },
   tagText: {
-    color: '#555555',
     fontSize: 12,
   },
   removeButton: {
@@ -46,7 +52,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   removeText: {
-    color: '#555555',
     fontWeight: 'bold',
     fontSize: 12,
     lineHeight: 16,
