@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, TextInput, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import db from '@/firebase/firebaseConfig'; 
 import ThoughtCard from '@/components/ThoughtCard';
 import { useUser } from '../(context)/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 import { getAuth } from 'firebase/auth';
-import { getLocalThoughts } from '@/utils/localStorageService';
+import { getLocalThoughts, saveLocalThoughts } from '@/utils/localStorageService';
 import GuestPrompt from '@/components/GuestPrompt';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -17,6 +17,8 @@ type Thought = {
     date: string;
     id: string;
     tags: string[];
+    favorite?: boolean;
+    userId: string;
 }
 
 export default function ThoughtsScreen() {
@@ -27,6 +29,7 @@ export default function ThoughtsScreen() {
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(false);
 
   // Load thoughts based on authentication state
   useEffect(() => {
@@ -88,33 +91,84 @@ export default function ThoughtsScreen() {
     }, [isGuestMode])
   );
 
-  // Filter thoughts based on search
-  const filteredThoughts = searchQuery.trim() !== '' 
-    ? thoughts.filter(thought =>
-        thought.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        thought.content.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : thoughts;
+  // Toggle favorite status
+  const handleToggleFavorite = async (thought: Thought) => {
+    const updatedThought = { ...thought, favorite: !thought.favorite };
+    
+    if (isGuestMode) {
+      // Update in local storage for guest mode
+      const updatedThoughts = thoughts.map(t => 
+        t.id === thought.id ? updatedThought : t
+      );
+      setThoughts(updatedThoughts);
+      await saveLocalThoughts(updatedThoughts);
+    } else {
+      // Update in Firestore for authenticated users
+      try {
+        const thoughtRef = doc(db, 'thoughts', thought.id);
+        await updateDoc(thoughtRef, { favorite: !thought.favorite });
+      } catch (error) {
+        console.error('Error updating favorite status:', error);
+      }
+    }
+  };
+
+  // Filter thoughts based on search and favorites
+  const filteredThoughts = thoughts
+    .filter(thought => {
+      // First apply favorites filter if enabled
+      if (showFavoritesOnly && !thought.favorite) {
+        return false;
+      }
+      
+      // Then apply search filter if there's a query
+      if (searchQuery.trim() !== '') {
+        return thought.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+               thought.content.toLowerCase().includes(searchQuery.toLowerCase());
+      }
+      
+      return true;
+    });
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {isGuestMode && <GuestPrompt />}
-      <View style={[styles.searchBarContainer, { backgroundColor: theme.border }]}>
-        <TextInput 
-          style={[styles.searchBar, { color: theme.text }]} 
-          placeholder="Search thoughts..." 
-          placeholderTextColor={theme.text}
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity 
-            style={styles.clearButton} 
-            onPress={() => setSearchQuery('')}
-          >
-            <Ionicons name="close" size={24} color={theme.text} />
-          </TouchableOpacity>
-        )}
+      
+      <View style={styles.filterContainer}>
+        <View style={[styles.searchBarContainer, { backgroundColor: theme.border, flex: 1 }]}>
+          <TextInput 
+            style={[styles.searchBar, { color: theme.text }]} 
+            placeholder="Search thoughts..." 
+            placeholderTextColor={theme.text}
+            onChangeText={setSearchQuery}
+            value={searchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity 
+              style={styles.clearButton} 
+              onPress={() => setSearchQuery('')}
+            >
+              <Ionicons name="close" size={24} color={theme.text} />
+            </TouchableOpacity>
+          )}
+        </View>
+        
+        <TouchableOpacity 
+          style={[
+            styles.favoriteFilterButton, 
+            { 
+              backgroundColor: showFavoritesOnly ? theme.buttonBackground : 'transparent',
+              borderColor: theme.border
+            }
+          ]} 
+          onPress={() => setShowFavoritesOnly(!showFavoritesOnly)}
+        >
+          <Ionicons 
+            name="heart" 
+            size={24} 
+            color={showFavoritesOnly ? theme.buttonText : theme.text} 
+          />
+        </TouchableOpacity>
       </View>
       
       {loading ? (
@@ -127,8 +181,20 @@ export default function ThoughtsScreen() {
             <ThoughtCard 
               thought={item}
               onPress={() => router.push(`/(screens)/${item.id}`)}
+              onToggleFavorite={() => handleToggleFavorite(item)}
             />
           )}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={[styles.emptyText, { color: theme.text }]}>
+                {showFavoritesOnly 
+                  ? "No favorite thoughts yet" 
+                  : searchQuery.trim() !== '' 
+                    ? "No thoughts match your search" 
+                    : "No thoughts yet. Add your first one!"}
+              </Text>
+            </View>
+          }
         />
       )}
       
@@ -147,10 +213,15 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
-  searchBarContainer: {
+  filterContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+    gap: 10,
+  },
+  searchBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderRadius: 50,
     paddingHorizontal: 15,
@@ -163,6 +234,14 @@ const styles = StyleSheet.create({
   clearButton: {
     padding: 8,
   },
+  favoriteFilterButton: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+  },
   floatingButton: {
     position: 'absolute',
     width: 50,
@@ -174,6 +253,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 999,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
   },
 });
 
