@@ -157,8 +157,8 @@ export default function ThoughtsScreen() {
           style={[
             styles.favoriteFilterButton, 
             { 
-              backgroundColor: showFavoritesOnly ? theme.buttonBackground : 'transparent',
-              borderColor: theme.border
+              backgroundColor: showFavoritesOnly ? theme.primary : 'transparent',
+              borderColor: theme.primary
             }
           ]} 
           onPress={() => setShowFavoritesOnly(!showFavoritesOnly)}
@@ -166,7 +166,7 @@ export default function ThoughtsScreen() {
           <Ionicons 
             name="heart" 
             size={24} 
-            color={showFavoritesOnly ? theme.buttonText : theme.text} 
+            color={showFavoritesOnly ? theme.buttonText : theme.primary} 
           />
         </TouchableOpacity>
       </View>
@@ -199,10 +199,10 @@ export default function ThoughtsScreen() {
       )}
       
       <TouchableOpacity 
-        style={[styles.floatingButton, { backgroundColor: theme.text }]}
+        style={[styles.floatingButton, { backgroundColor: theme.primary }]}
         onPress={() => router.push("/NewThought")}
       >
-        <Ionicons name="add" size={24} color={theme.buttonBackground} />
+        <Ionicons name="add" size={24} color={theme.buttonText} />
       </TouchableOpacity>
     </View>
   );
