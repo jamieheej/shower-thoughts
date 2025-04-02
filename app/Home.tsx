@@ -2,13 +2,15 @@ import React, { useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
-import { collection, setDoc, doc } from "firebase/firestore";
+import { collection, setDoc, doc, addDoc } from "firebase/firestore";
 import db, { auth } from "@/firebase/firebaseConfig";
 import { useRouter } from "expo-router";
 import { useUser } from "./(context)/UserContext";
-import { Video, ResizeMode } from 'expo-av';
+import { Video, ResizeMode, Audio } from 'expo-av';
 import { AntDesign } from '@expo/vector-icons';
 import { getAuth, signInWithCredential, GoogleAuthProvider, OAuthProvider } from "firebase/auth";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -72,6 +74,22 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     fontSize: 16,
   },
+  guestButton: {
+    height: 44,
+    width: 200,
+    marginTop: 10,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 50,
+  },
+  guestButtonText: {
+    color: 'white',
+    fontWeight: '500',
+    fontSize: 16,
+  },
 });
 
 type UserData = {
@@ -86,14 +104,24 @@ type UserData = {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { userInfo, setUserInfo, handleLogout } = useUser();
+  const { userInfo, setUserInfo, handleLogout, enableGuestMode, isGuestMode, disableGuestMode } = useUser();
 
   useEffect(() => {
     GoogleSignin.configure();
+    Audio.setAudioModeAsync({
+      playsInSilentModeIOS: false,
+      staysActiveInBackground: false,
+    });
   }, []);
 
   const handleAppleLogin = async () => {
     try {
+      // Clear guest mode first if active
+      if (isGuestMode) {
+        await AsyncStorage.removeItem('isGuestMode');
+        disableGuestMode();
+      }
+      
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
@@ -101,24 +129,39 @@ export default function HomeScreen() {
         ],
       });
       
-      // Create a Firebase credential from the Apple authentication
-      const { identityToken } = credential;
-      if (!identityToken) throw new Error("No identity token provided");
-      
-      // Sign in to Firebase with the Apple credential
+      // Create a Firebase credential from the Apple credential
       const provider = new OAuthProvider('apple.com');
       const authCredential = provider.credential({
-        idToken: identityToken,
-//        rawNonce: /* provide a nonce if you generated one */,
+        idToken: credential.identityToken || '',
+        rawNonce: credential.state || '',
       });
       
-      // Sign in to Firebase
-      await signInWithCredential(auth, authCredential);
+      // Sign in to Firebase with the credential
+      const userCredential = await signInWithCredential(auth, authCredential);
+      const firebaseUser = userCredential.user;
       
-      // Now auth.currentUser should be available
-      const userData = createUserData(credential, "apple");
-      await saveUserData(userData);
-      router.push('/(tabs)/Thoughts');
+      // Create user data
+      const userData = {
+        id: firebaseUser.uid,
+        name: credential.fullName?.givenName || firebaseUser.displayName || '',
+        email: credential.email || firebaseUser.email || '',
+        photo: firebaseUser.photoURL,
+        familyName: credential.fullName?.familyName || null,
+        givenName: credential.fullName?.givenName || null,
+        loginMethod: "apple",
+      };
+      
+      // Set user info
+      setUserInfo(userData);
+      
+      // Save user data to Firestore
+      await setDoc(doc(collection(db, "users"), firebaseUser.uid), userData, { merge: true });
+      
+      // Navigate to Thoughts
+      router.replace('/(tabs)/Thoughts');
+      
+      // Create a test thought
+      await createTestThought(firebaseUser.uid);
     } catch (error: any) {
       handleAuthError(error);
     }
@@ -138,6 +181,9 @@ export default function HomeScreen() {
         userData.loginMethod = "google";
         await saveUserData(userData);
         router.push('/(tabs)/Thoughts');
+        
+        // Add this after successful login
+        await createTestThought(userData.id);
       }
     } catch (error: any) {
       handleAuthError(error);
@@ -156,22 +202,58 @@ export default function HomeScreen() {
 
   const saveUserData = async (userData: UserData) => {
     try {
-      setUserInfo(userData);
-      
       // Get the current Firebase user
       const currentUser = auth.currentUser;
-      if (!currentUser) {
-        throw new Error("No Firebase user found");
-      }
-            
-      await setDoc(doc(collection(db, "users"), currentUser.uid), {
-        ...userData,
-        id: currentUser.uid
-      }, { merge: true });
       
+      if (currentUser) {
+        // User is already authenticated, save data
+        await setDoc(doc(collection(db, "users"), currentUser.uid), {
+          ...userData,
+          id: currentUser.uid
+        }, { merge: true });
+        console.log("User data saved successfully");
+        
+        // Call this in your saveUserData function when a user is created
+        if (currentUser && !userInfo) {
+          await createTestThought(currentUser.uid);
+        }
+      } else {
+        // No user yet, set up a listener with a shorter timeout
+        return new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            console.log("Auth timeout, but continuing anyway");
+            resolve(false); // Resolve instead of reject to prevent errors
+          }, 3000);
+          
+          const unsubscribe = auth.onAuthStateChanged(async (user: any) => {
+            if (user) {
+              clearTimeout(timeout);
+              try {
+                await setDoc(doc(collection(db, "users"), user.uid), {
+                  ...userData,
+                  id: user.uid
+                }, { merge: true });
+                console.log("User data saved successfully");
+                
+                // Call this in your saveUserData function when a user is created
+                if (user && !userInfo) {
+                  await createTestThought(user.uid);
+                }
+                resolve(true);
+              } catch (error) {
+                console.error("Error saving user data:", error);
+                resolve(false); // Resolve instead of reject
+              } finally {
+                unsubscribe();
+              }
+            }
+          });
+        });
+      }
     } catch (error) {
-      console.error("Error saving user data:", error);
-      throw error;
+      console.error("Error in saveUserData:", error);
+      // Don't throw, just log
+      return false;
     }
   };
 
@@ -186,6 +268,16 @@ export default function HomeScreen() {
     }
   };
 
+  const handleGuestMode = async () => {
+    console.log("Enabling guest mode");
+    enableGuestMode();
+    
+    await AsyncStorage.setItem('isGuestMode', 'true');
+    
+    // Force a refresh of the app by resetting the navigation state
+    router.replace('/');
+  };
+
   const userName = userInfo?.name ?? "Guest";
 
   return (
@@ -196,6 +288,7 @@ export default function HomeScreen() {
         shouldPlay
         isLooping
         resizeMode={ResizeMode.COVER}
+        isMuted={true}
       />
       <View style={styles.container}>
         <Text style={styles.appName}>ShowerThoughts</Text>
@@ -219,9 +312,29 @@ export default function HomeScreen() {
               <AntDesign name="google" size={18} color="white" style={styles.googleIcon} />
               <Text style={styles.googleText}>Sign in with Google</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={styles.guestButton} onPress={handleGuestMode}>
+              <Text style={styles.guestButtonText}>Continue as Guest</Text>
+            </TouchableOpacity>
           </>
         )}
       </View>
     </>
   );
+};
+
+const createTestThought = async (userId: string) => {
+  try {
+    const thoughtsRef = collection(db, 'thoughts');
+    await addDoc(thoughtsRef, {
+      title: "Welcome to ShowerThoughts!",
+      content: "This is your first thought. Tap the + button to add more.",
+      date: new Date().toISOString(),
+      userId: userId,
+      tags: ["welcome"],
+      favorite: false
+    });
+    console.log("Test thought created");
+  } catch (error) {
+    console.error("Error creating test thought:", error);
+  }
 };
