@@ -1,19 +1,59 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, FlatList } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Button, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useUser } from "../(context)/UserContext";
 import { Ionicons } from "@expo/vector-icons";
 
 const SettingsScreen = () => {
   const router = useRouter();
-  const { handleLogout, toggleTheme, theme } = useUser();
+  const { handleLogout, toggleTheme, theme, deleteUserAccount, isGuestMode, disableGuestMode } = useUser();
 
   const handleLogoutAndNavigate = async () => {
     await handleLogout();
     router.replace('/Home');
   };
 
-  const settingsOptions = [
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to delete your account? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          onPress: async () => {
+            try {
+              await deleteUserAccount();
+              Alert.alert("Account deleted successfully.");
+              router.replace('/Home');
+            } catch (error: any) {
+              Alert.alert("Error deleting account:", error.message);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleSignIn = () => {
+    disableGuestMode();
+    router.push('/Home');
+  };
+
+  const settingsOptions = isGuestMode ? [
+    {
+      id: '1',
+      title: 'Change Theme',
+      icon: 'color-palette',
+      onPress: toggleTheme,
+    },
+    {
+      id: '2',
+      title: 'Sign In',
+      icon: 'log-in',
+      onPress: handleSignIn,
+    },
+  ] : [
     {
       id: '1',
       title: 'Change Theme',
@@ -44,6 +84,7 @@ const SettingsScreen = () => {
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
       />
+      {!isGuestMode && <Button title="Delete Account" onPress={handleDeleteAccount} />}
     </View>
   );
 };

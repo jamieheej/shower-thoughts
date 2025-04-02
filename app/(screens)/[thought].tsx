@@ -6,44 +6,93 @@ import db from '@/firebase/firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 import Tag from '@/components/Tag';
 import { useUser } from '../(context)/UserContext'; // Import useUser
+import { getLocalThoughts, updateLocalThought, deleteLocalThought } from '@/utils/localStorageService';
+
+// Add this type definition at the top of your file
+type Thought = {
+  id: string;
+  title: string;
+  content: string;
+  date?: string;
+  tags?: string[];
+  userId?: string;
+};
 
 const Thought = () => {
   const localSearchParams = useLocalSearchParams();
   const id = localSearchParams.thought as string;
-  const [thought, setThought] = useState<{ title: string; content: string; tags?: string[] } | null>(null);
+  const [thought, setThought] = useState<Thought | null>(null);
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
-  const { theme } = useUser(); // Get the current theme
+  const { theme, isGuestMode } = useUser(); // Get the current theme and guest mode
 
   useEffect(() => {
-    const fetchThought = async () => {
-      const thoughtRef = doc(db, 'thoughts', id);
-      const thoughtData = await getDoc(thoughtRef);
-      const data = thoughtData.data() as { title: string; content: string; tags?: string[] } | null || null; // Cast to expected type
-      setThought(data);
-      setTags(data?.tags || []);
+    const loadThought = async () => {
+      if (isGuestMode) {
+        // Load from local storage for guest mode
+        const localThoughts = await getLocalThoughts();
+        const foundThought = localThoughts.find(t => t.id === id);
+        if (foundThought) {
+          setThought(foundThought);
+        }
+      } else {
+        // Load from Firestore for authenticated users
+        const docRef = doc(db, 'thoughts', id);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          setThought({ id: docSnap.id, ...docSnap.data() } as Thought);
+        }
+      }
     };
-
-    fetchThought();
-  }, [id]);
+    
+    loadThought();
+  }, [id, isGuestMode]);
 
   const handleDelete = async () => {
     try {
-      await deleteDoc(doc(db, 'thoughts', id));
-      Alert.alert('Success', 'Thought deleted successfully');
-      router.push('/(tabs)/Thoughts');
+      if (isGuestMode) {
+        // Delete from local storage for guest mode
+        await deleteLocalThought(id);
+        router.back();
+      } else {
+        // Delete from Firestore for authenticated users
+        await deleteDoc(doc(db, 'thoughts', id));
+        router.back();
+      }
     } catch (error) {
+      console.error('Error deleting thought:', error);
       Alert.alert('Error', 'Failed to delete thought');
     }
   };
 
   const handleSave = async () => {
     try {
-      const thoughtRef = doc(db, 'thoughts', id);
-      await setDoc(thoughtRef, thought);
+      if (isGuestMode) {
+        // Update in local storage for guest mode
+        if (thought) {
+          await updateLocalThought({
+            ...thought,
+            title: thought.title,
+            content: thought.content,
+            tags: tags || [],
+            date: thought.date || new Date().toISOString() // Ensure date is always a string
+          });
+        }
+      } else {
+        // Update in Firestore for authenticated users
+        const thoughtRef = doc(db, 'thoughts', id);
+        await setDoc(thoughtRef, {
+          title: thought?.title,
+          content: thought?.content,
+          tags: tags
+        }, { merge: true });
+      }
+      
       Alert.alert('Success', 'Thought saved successfully');
     } catch (error) {
+      console.error('Error updating thought:', error);
       Alert.alert('Error', 'Failed to save thought');
     } finally {
       setIsEditing(false);

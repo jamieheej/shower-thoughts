@@ -1,22 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'expo-router';
 import { addDoc, collection } from 'firebase/firestore';
-import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import db from '@/firebase/firebaseConfig'; // Adjust the import based on your Firebase setup
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 import Tag from '@/components/Tag';
 import { useUser } from './(context)/UserContext';
+import { saveLocalThought } from '@/utils/localStorageService';
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid'; 
+import { getAuth } from 'firebase/auth';
 
 export default function NewThoughtScreen() {
   const router = useRouter();
-  const { userInfo } = useUser();
+  const { userInfo, isGuestMode } = useUser();
   const userId = userInfo?.id;
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const { theme } = useUser();
+  const [loading, setLoading] = useState(false);
+
+  // Add refs for your TextInputs
+  const titleInputRef = useRef<TextInput>(null);
+  const contentInputRef = useRef<TextInput>(null);
+  const tagInputRef = useRef<TextInput>(null);
 
   const styles = StyleSheet.create({
     container: {
@@ -132,15 +142,44 @@ export default function NewThoughtScreen() {
   };
 
   const handleSave = async () => {
-    if (title && content) {
-      try {
-        await addDoc(collection(db, 'thoughts'), { title, content, userId, tags });
-        await AsyncStorage.removeItem('draft'); // Clear draft after saving
-        router.replace("/(tabs)/Thoughts");
-        resetForm();
-      } catch (error) {
-        console.error("Error saving thought: ", error);
+    if (!title.trim() || !content.trim()) {
+      Alert.alert("Error", "Title and content are required");
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      const currentUser = getAuth().currentUser;
+      const userId = currentUser ? currentUser.uid : userInfo?.id;
+      
+      if (!userId && !isGuestMode) {
+        throw new Error("No user ID available");
       }
+      
+      const newThought = {
+        id: uuidv4(),
+        title,
+        content,
+        date: new Date().toISOString(),
+        userId: userId || 'guest',
+        tags: tags,
+      };
+      
+      if (isGuestMode) {
+        // Save locally for guest mode
+        await saveLocalThought(newThought);
+      } else {
+        // Save to Firestore for authenticated users
+        await addDoc(collection(db, 'thoughts'), newThought);
+      }
+      
+      router.back();
+    } catch (error) {
+      console.error("Error saving thought:", error);
+      Alert.alert("Error", "Failed to save thought. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -153,6 +192,7 @@ export default function NewThoughtScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <TextInput 
+        ref={titleInputRef}
         style={[styles.input, { borderColor: theme.border }]} 
         placeholder="Title" 
         value={title} 
@@ -160,6 +200,7 @@ export default function NewThoughtScreen() {
         placeholderTextColor={theme.text}
       />
       <TextInput 
+        ref={contentInputRef}
         style={[styles.contentInput, { borderColor: theme.border }]} 
         placeholder="Content" 
         multiline 
@@ -170,6 +211,7 @@ export default function NewThoughtScreen() {
         placeholderTextColor={theme.text}
       />
       <TextInput 
+        ref={tagInputRef}
         style={[styles.input, { borderColor: theme.border }]} 
         placeholder="Add a tag" 
         value={tagInput} 
