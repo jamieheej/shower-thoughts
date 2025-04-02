@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import db from '@/firebase/firebaseConfig';
@@ -7,6 +7,7 @@ import { useUser } from '../(context)/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 import { getLocalThoughts, updateLocalThought, deleteLocalThought } from '@/utils/localStorageService';
 import { formatDate } from '@/utils/dateUtils';
+import { shareThought } from '@/utils/shareUtils';
 
 type Thought = {
   id: string;
@@ -143,6 +144,13 @@ export default function ThoughtDetailScreen() {
               size={24} 
               color={theme.text} 
             />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            onPress={() => shareThought(thought)}
+            style={styles.actionButton}
+          >
+            <Ionicons name="share-outline" size={24} color={theme.text} />
           </TouchableOpacity>
           
           <TouchableOpacity 
