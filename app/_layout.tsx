@@ -70,7 +70,8 @@ function RootLayoutContent() {
             headerTintColor: theme.text,
           }}
         />
-        <Stack.Screen name="(screens)/[thought]" options={{ headerShown: false }} />
+        <Stack.Screen name="(screens)/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="(screens)/EditThought" options={{ headerShown: false }} />
         <Stack.Screen name="Home" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style={theme.background === '#000' ? 'light' : 'dark'} />
