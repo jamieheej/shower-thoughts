@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getLocalThoughts, updateLocalThought, deleteLocalThought } from '@/utils/localStorageService';
 import { formatDate } from '@/utils/dateUtils';
 import { shareThought } from '@/utils/shareUtils';
+import { getAuth } from 'firebase/auth';
 
 type Thought = {
   id: string;
@@ -25,6 +26,7 @@ export default function ThoughtDetailScreen() {
   const { isGuestMode, theme, userInfo } = useUser();
   const [thought, setThought] = useState<Thought | null>(null);
   const [loading, setLoading] = useState(true);
+  const currentUser = getAuth().currentUser;
 
   useEffect(() => {
     const fetchThought = async () => {
@@ -39,10 +41,12 @@ export default function ThoughtDetailScreen() {
         } else {
           // Fetch from Firestore for authenticated users
           const thoughtRef = doc(db, 'thoughts', id as string);
+          
           const thoughtSnap = await getDoc(thoughtRef);
           
           if (thoughtSnap.exists()) {
-            setThought({ id: thoughtSnap.id, ...thoughtSnap.data() } as Thought);
+            const data = thoughtSnap.data();
+            setThought({ id: thoughtSnap.id, ...data } as Thought);
           }
         }
       } catch (error) {

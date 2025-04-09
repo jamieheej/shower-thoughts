@@ -22,7 +22,6 @@ type Thought = {
 }
 
 export default function ThoughtsScreen() {
-  console.log("ThoughtsScreen rendering");
   const router = useRouter();
   const { isGuestMode, theme, userInfo } = useUser();
   const currentUserId = getAuth().currentUser?.uid;
@@ -34,10 +33,12 @@ export default function ThoughtsScreen() {
   // Load thoughts based on authentication state
   useEffect(() => {
     // For authenticated users
-    if (!isGuestMode && userInfo) {
+    const currentUser = getAuth().currentUser;
+    
+    if (!isGuestMode && currentUser) {
       // User is authenticated, load from Firestore
       const thoughtsRef = collection(db, 'thoughts');
-      const q = query(thoughtsRef, where('userId', '==', userInfo.id));
+      const q = query(thoughtsRef, where('userId', '==', currentUser.uid));
       
       const unsubscribe = onSnapshot(q, 
         (querySnapshot) => {
@@ -48,7 +49,6 @@ export default function ThoughtsScreen() {
           setThoughts(thoughtsData);
         },
         (error) => {
-          console.error("Firestore error:", error);
           setThoughts([]);
         }
       );
@@ -71,8 +71,6 @@ export default function ThoughtsScreen() {
   // Load local thoughts for guest mode
   useFocusEffect(
     useCallback(() => {
-      console.log("useFocusEffect running, isGuestMode:", isGuestMode);
-      
       if (!isGuestMode) return;
       
       const loadLocalThoughts = async () => {
@@ -81,7 +79,6 @@ export default function ThoughtsScreen() {
           const localThoughts = await getLocalThoughts();
           setThoughts(localThoughts);
         } catch (error) {
-          console.error('Error loading local thoughts:', error);
         } finally {
           setLoading(false);
         }
@@ -108,7 +105,6 @@ export default function ThoughtsScreen() {
         const thoughtRef = doc(db, 'thoughts', thought.id);
         await updateDoc(thoughtRef, { favorite: !thought.favorite });
       } catch (error) {
-        console.error('Error updating favorite status:', error);
       }
     }
   };
@@ -180,7 +176,9 @@ export default function ThoughtsScreen() {
           renderItem={({ item }) => (
             <ThoughtCard 
               thought={item}
-              onPress={() => router.push(`/(screens)/${item.id}`)}
+              onPress={() => {
+                router.push(`/(screens)/${item.id}`);
+              }}
               onToggleFavorite={() => handleToggleFavorite(item)}
             />
           )}
