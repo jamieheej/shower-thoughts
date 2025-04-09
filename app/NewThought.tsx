@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'expo-router';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, setDoc, doc, updateDoc } from 'firebase/firestore';
 import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import db from '@/firebase/firebaseConfig'; // Adjust the import based on your Firebase setup
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -15,7 +15,6 @@ import { getAuth } from 'firebase/auth';
 export default function NewThoughtScreen() {
   const router = useRouter();
   const { userInfo, isGuestMode } = useUser();
-  const userId = userInfo?.id;
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -151,11 +150,9 @@ export default function NewThoughtScreen() {
     
     try {
       const currentUser = getAuth().currentUser;
-      const userId = currentUser ? currentUser.uid : userInfo?.id;
       
-      if (!userId && !isGuestMode) {
-        throw new Error("No user ID available");
-      }
+      // Always use Firebase Auth UID when available
+      const userId = currentUser?.uid;
       
       const newThought = {
         id: uuidv4(),
@@ -171,8 +168,11 @@ export default function NewThoughtScreen() {
         // Save locally for guest mode
         await saveLocalThought(newThought);
       } else {
-        // Save to Firestore for authenticated users
-        await addDoc(collection(db, 'thoughts'), newThought);
+        // Save to Firestore and get the generated ID
+        const docRef = await addDoc(collection(db, 'thoughts'), newThought);
+        
+        // Update the thought with the Firestore ID
+        await updateDoc(docRef, { id: docRef.id });
       }
       router.back();
     } catch (error) {
