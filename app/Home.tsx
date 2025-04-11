@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { collection, setDoc, doc, addDoc } from "firebase/firestore";
@@ -161,7 +161,7 @@ export default function HomeScreen() {
       router.replace('/(tabs)/Thoughts');
       
       // Create a test thought
-      await createTestThought(firebaseUser.uid);
+      // await createTestThought(firebaseUser.uid);
     } catch (error: any) {
       handleAuthError(error);
     }
@@ -262,14 +262,13 @@ export default function HomeScreen() {
     if (error.code === "ERR_REQUEST_CANCELED") {
       // Handle user cancellation
     } else if (error.code === statusCodes.IN_PROGRESS) {
-      console.log("Sign in is in progress");
+     console.log("Sign in is in progress");
     } else {
       console.log(error);
     }
   };
 
   const handleGuestMode = async () => {
-    console.log("Enabling guest mode");
     enableGuestMode();
     
     await AsyncStorage.setItem('isGuestMode', 'true');
@@ -277,8 +276,6 @@ export default function HomeScreen() {
     // Force a refresh of the app by resetting the navigation state
     router.replace('/');
   };
-
-  const userName = userInfo?.name ?? "Guest";
 
   return (
     <>
@@ -333,8 +330,7 @@ const createTestThought = async (userId: string) => {
       tags: ["welcome"],
       favorite: false
     });
-    console.log("Test thought created");
   } catch (error) {
-    console.error("Error creating test thought:", error);
+    // Remove: console.error("Error creating test thought:", error);
   }
 };

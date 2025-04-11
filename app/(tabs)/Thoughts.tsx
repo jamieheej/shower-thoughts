@@ -24,18 +24,77 @@ type Thought = {
 export default function ThoughtsScreen() {
   const router = useRouter();
   const { isGuestMode, theme, userInfo } = useUser();
-  const currentUserId = getAuth().currentUser?.uid;
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(false);
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 20,
+    },
+    filterContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 20,
+      gap: 10,
+    },
+    searchBarContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderColor: theme.border,
+      borderWidth: 1,
+      borderRadius: 50,
+      paddingHorizontal: 15,
+    },
+    searchBar: {
+      flex: 1,
+      height: 46,
+      fontSize: 16,
+    },
+    clearButton: {
+      padding: 8,
+    },
+    favoriteFilterButton: {
+      width: 46,
+      height: 46,
+      borderRadius: 23,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+    },
+    floatingButton: {
+      position: 'absolute',
+      width: 50,
+      height: 50,
+      bottom: 30,
+      right: 30,
+      borderRadius: 10,
+      padding: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 999,
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    emptyText: {
+      fontSize: 16,
+      textAlign: 'center',
+    },
+  });
+  
   // Load thoughts based on authentication state
   useEffect(() => {
     // For authenticated users
     const currentUser = getAuth().currentUser;
     
     if (!isGuestMode && currentUser) {
+      
       // User is authenticated, load from Firestore
       const thoughtsRef = collection(db, 'thoughts');
       const q = query(thoughtsRef, where('userId', '==', currentUser.uid));
@@ -49,6 +108,7 @@ export default function ThoughtsScreen() {
           setThoughts(thoughtsData);
         },
         (error) => {
+          console.error("Firestore error:", error);
           setThoughts([]);
         }
       );
@@ -71,6 +131,7 @@ export default function ThoughtsScreen() {
   // Load local thoughts for guest mode
   useFocusEffect(
     useCallback(() => {
+      
       if (!isGuestMode) return;
       
       const loadLocalThoughts = async () => {
@@ -79,6 +140,7 @@ export default function ThoughtsScreen() {
           const localThoughts = await getLocalThoughts();
           setThoughts(localThoughts);
         } catch (error) {
+          console.error('Error loading local thoughts:', error);
         } finally {
           setLoading(false);
         }
@@ -105,6 +167,7 @@ export default function ThoughtsScreen() {
         const thoughtRef = doc(db, 'thoughts', thought.id);
         await updateDoc(thoughtRef, { favorite: !thought.favorite });
       } catch (error) {
+        console.error('Error updating favorite status:', error);
       }
     }
   };
@@ -176,9 +239,7 @@ export default function ThoughtsScreen() {
           renderItem={({ item }) => (
             <ThoughtCard 
               thought={item}
-              onPress={() => {
-                router.push(`/(screens)/${item.id}`);
-              }}
+              onPress={() => router.push(`/(screens)/${item.id}`)}
               onToggleFavorite={() => handleToggleFavorite(item)}
             />
           )}
@@ -206,62 +267,5 @@ export default function ThoughtsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    gap: 10,
-  },
-  searchBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 50,
-    paddingHorizontal: 15,
-  },
-  searchBar: {
-    flex: 1,
-    height: 46,
-    fontSize: 16,
-  },
-  clearButton: {
-    padding: 8,
-  },
-  favoriteFilterButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  floatingButton: {
-    position: 'absolute',
-    width: 50,
-    height: 50,
-    bottom: 30,
-    right: 30,
-    borderRadius: 10,
-    padding: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 999,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    textAlign: 'center',
-  },
-});
 
 
