@@ -174,6 +174,15 @@ export default function NewThoughtScreen() {
         // Update the thought with the Firestore ID
         await updateDoc(docRef, { id: docRef.id });
       }
+      
+      // Clear the draft from AsyncStorage after successful save
+      await AsyncStorage.removeItem('draft');
+      
+      // Reset form state
+      setTitle('');
+      setContent('');
+      setTags([]);
+      
       router.back();
     } catch (error) {
       console.error("Error saving thought:", error);
@@ -181,12 +190,6 @@ export default function NewThoughtScreen() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const resetForm = () => {
-    setTitle("");
-    setContent("");
-    setTags([]);
   };
 
   return (
