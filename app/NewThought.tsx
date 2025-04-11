@@ -193,31 +193,49 @@ export default function NewThoughtScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <TextInput 
         ref={titleInputRef}
-        style={[styles.input, { borderColor: theme.border }]} 
+        style={[
+          styles.input, 
+          { 
+            borderColor: theme.border,
+            color: theme.text 
+          }
+        ]} 
         placeholder="Title" 
         value={title} 
         onChangeText={setTitle}
-        placeholderTextColor={theme.text}
+        placeholderTextColor={theme.textSecondary}
       />
       <TextInput 
         ref={contentInputRef}
-        style={[styles.contentInput, { borderColor: theme.border }]} 
+        style={[
+          styles.contentInput, 
+          { 
+            borderColor: theme.border,
+            color: theme.text 
+          }
+        ]} 
         placeholder="Content" 
         multiline 
         numberOfLines={6}
         textAlignVertical="top"
         value={content} 
         onChangeText={setContent}
-        placeholderTextColor={theme.text}
+        placeholderTextColor={theme.textSecondary}
       />
       <TextInput 
         ref={tagInputRef}
-        style={[styles.input, { borderColor: theme.border }]} 
+        style={[
+          styles.input, 
+          { 
+            borderColor: theme.border,
+            color: theme.text 
+          }
+        ]} 
         placeholder="Add a tag" 
         value={tagInput} 
         onChangeText={setTagInput}
         onSubmitEditing={handleAddTag}
-        placeholderTextColor={theme.text}
+        placeholderTextColor={theme.textSecondary}
       />
       <View style={[styles.tagContainer, { backgroundColor: theme.background }]}>
         {tags.map((tag, index) => (
