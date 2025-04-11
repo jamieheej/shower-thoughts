@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   backButton: {
-    padding: 8,
+    padding: 0,
   },
   actionButton: {
     padding: 8,
