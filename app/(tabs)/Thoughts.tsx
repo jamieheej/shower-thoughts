@@ -22,6 +22,7 @@ type Thought = {
 }
 
 export default function ThoughtsScreen() {
+  console.log("ThoughtsScreen rendering");
   const router = useRouter();
   const { isGuestMode, theme, userInfo } = useUser();
   const currentUserId = getAuth().currentUser?.uid;
@@ -34,8 +35,12 @@ export default function ThoughtsScreen() {
   useEffect(() => {
     // For authenticated users
     const currentUser = getAuth().currentUser;
+    console.log("Current user from Auth in Thoughts.tsx:", currentUser?.uid);
+    console.log("User info from context in Thoughts.tsx:", userInfo?.id);
     
     if (!isGuestMode && currentUser) {
+      console.log("Loading thoughts for authenticated user:", currentUser.uid);
+      
       // User is authenticated, load from Firestore
       const thoughtsRef = collection(db, 'thoughts');
       const q = query(thoughtsRef, where('userId', '==', currentUser.uid));
@@ -46,9 +51,12 @@ export default function ThoughtsScreen() {
           querySnapshot.forEach((doc) => {
             thoughtsData.push({ id: doc.id, ...doc.data() } as Thought);
           });
+          console.log(`Loaded ${thoughtsData.length} thoughts from Firestore`);
+          console.log("Loaded thoughts with IDs:", thoughtsData.map(t => t.id));
           setThoughts(thoughtsData);
         },
         (error) => {
+          console.error("Firestore error:", error);
           setThoughts([]);
         }
       );
@@ -71,6 +79,8 @@ export default function ThoughtsScreen() {
   // Load local thoughts for guest mode
   useFocusEffect(
     useCallback(() => {
+      console.log("useFocusEffect running, isGuestMode:", isGuestMode);
+      
       if (!isGuestMode) return;
       
       const loadLocalThoughts = async () => {
@@ -79,6 +89,7 @@ export default function ThoughtsScreen() {
           const localThoughts = await getLocalThoughts();
           setThoughts(localThoughts);
         } catch (error) {
+          console.error('Error loading local thoughts:', error);
         } finally {
           setLoading(false);
         }
@@ -105,6 +116,7 @@ export default function ThoughtsScreen() {
         const thoughtRef = doc(db, 'thoughts', thought.id);
         await updateDoc(thoughtRef, { favorite: !thought.favorite });
       } catch (error) {
+        console.error('Error updating favorite status:', error);
       }
     }
   };
@@ -176,9 +188,7 @@ export default function ThoughtsScreen() {
           renderItem={({ item }) => (
             <ThoughtCard 
               thought={item}
-              onPress={() => {
-                router.push(`/(screens)/${item.id}`);
-              }}
+              onPress={() => router.push(`/(screens)/${item.id}`)}
               onToggleFavorite={() => handleToggleFavorite(item)}
             />
           )}

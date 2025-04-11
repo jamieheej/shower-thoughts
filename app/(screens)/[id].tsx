@@ -30,7 +30,7 @@ export default function ThoughtDetailScreen() {
 
   useEffect(() => {
     const fetchThought = async () => {
-      try {
+      try {        
         if (isGuestMode) {
           // Fetch from local storage for guest mode
           const localThoughts = await getLocalThoughts();

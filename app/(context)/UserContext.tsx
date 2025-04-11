@@ -29,7 +29,6 @@ interface UserProviderProps {
 
 // Create a provider component
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
-    console.log("UserProvider rendering");
     const [userInfo, setUserInfo] = useState<any>(null); // Replace 'any' with your user info type
     const [theme, setTheme] = useState(lightTheme); // Default to light theme
     const [isGuestMode, setIsGuestMode] = useState<boolean>(false);
@@ -60,8 +59,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
             
             // Clear user info last
             setUserInfo(null);
-            
-            console.log("User signed out completely");
         } catch (error) {
             console.error("Error during logout:", error);
         }
@@ -116,7 +113,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     };
 
     const enableGuestMode = useCallback(() => {
-        console.log("enableGuestMode called");
         setIsGuestMode(true);
     }, []);
     
@@ -136,8 +132,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         enableGuestMode,
         disableGuestMode
     };
-
-    console.log("isGuestMode:", isGuestMode);
 
     useEffect(() => {
         const auth = getAuth();

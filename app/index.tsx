@@ -8,15 +8,10 @@ export default function Index() {
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    console.log("Index mounted, userInfo:", userInfo ? "exists" : "null");
-    console.log("Index mounted, isGuestMode:", isGuestMode);
-    
     const checkGuestMode = async () => {
       const storedGuestMode = await AsyncStorage.getItem('isGuestMode');
-      console.log("Stored guest mode:", storedGuestMode);
       
       if (storedGuestMode === 'true') {
-        console.log("Enabling guest mode from storage");
         enableGuestMode();
       }
       setIsLoading(false);
@@ -28,8 +23,6 @@ export default function Index() {
   if (isLoading) {
     return null; // Or a loading indicator
   }
-  
-  console.log("Index rendering, userInfo:", userInfo ? "exists" : "null", "isGuestMode:", isGuestMode);
   
   if (userInfo || isGuestMode) {
     return <Redirect href="/(tabs)/Thoughts" />;
