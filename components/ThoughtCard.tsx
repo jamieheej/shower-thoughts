@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useUser } from '@/app/(context)/UserContext';
@@ -169,4 +169,12 @@ const styles = StyleSheet.create({
   }
 });
 
-export default ThoughtCard; 
+export default memo(ThoughtCard, (prevProps, nextProps) => {
+  return (
+    prevProps.thought.id === nextProps.thought.id &&
+    prevProps.thought.title === nextProps.thought.title &&
+    prevProps.thought.content === nextProps.thought.content &&
+    prevProps.thought.favorite === nextProps.thought.favorite &&
+    prevProps.thought.date === nextProps.thought.date
+  );
+}); 
