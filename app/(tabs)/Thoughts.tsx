@@ -22,10 +22,8 @@ type Thought = {
 }
 
 export default function ThoughtsScreen() {
-  console.log("ThoughtsScreen rendering");
   const router = useRouter();
   const { isGuestMode, theme, userInfo } = useUser();
-  const currentUserId = getAuth().currentUser?.uid;
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -35,11 +33,8 @@ export default function ThoughtsScreen() {
   useEffect(() => {
     // For authenticated users
     const currentUser = getAuth().currentUser;
-    console.log("Current user from Auth in Thoughts.tsx:", currentUser?.uid);
-    console.log("User info from context in Thoughts.tsx:", userInfo?.id);
     
     if (!isGuestMode && currentUser) {
-      console.log("Loading thoughts for authenticated user:", currentUser.uid);
       
       // User is authenticated, load from Firestore
       const thoughtsRef = collection(db, 'thoughts');
@@ -51,8 +46,6 @@ export default function ThoughtsScreen() {
           querySnapshot.forEach((doc) => {
             thoughtsData.push({ id: doc.id, ...doc.data() } as Thought);
           });
-          console.log(`Loaded ${thoughtsData.length} thoughts from Firestore`);
-          console.log("Loaded thoughts with IDs:", thoughtsData.map(t => t.id));
           setThoughts(thoughtsData);
         },
         (error) => {
@@ -79,7 +72,6 @@ export default function ThoughtsScreen() {
   // Load local thoughts for guest mode
   useFocusEffect(
     useCallback(() => {
-      console.log("useFocusEffect running, isGuestMode:", isGuestMode);
       
       if (!isGuestMode) return;
       
