@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Share } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Share, SafeAreaView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import db from '@/firebase/firebaseConfig';
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getLocalThoughts, updateLocalThought, deleteLocalThought } from '@/utils/localStorageService';
 import { formatDate } from '@/utils/dateUtils';
 import { shareThought } from '@/utils/shareUtils';
+import { getAuth } from 'firebase/auth';
 
 type Thought = {
   id: string;
@@ -25,10 +26,11 @@ export default function ThoughtDetailScreen() {
   const { isGuestMode, theme, userInfo } = useUser();
   const [thought, setThought] = useState<Thought | null>(null);
   const [loading, setLoading] = useState(true);
+  const currentUser = getAuth().currentUser;
 
   useEffect(() => {
     const fetchThought = async () => {
-      try {
+      try {        
         if (isGuestMode) {
           // Fetch from local storage for guest mode
           const localThoughts = await getLocalThoughts();
@@ -39,10 +41,12 @@ export default function ThoughtDetailScreen() {
         } else {
           // Fetch from Firestore for authenticated users
           const thoughtRef = doc(db, 'thoughts', id as string);
+          
           const thoughtSnap = await getDoc(thoughtRef);
           
           if (thoughtSnap.exists()) {
-            setThought({ id: thoughtSnap.id, ...thoughtSnap.data() } as Thought);
+            const data = thoughtSnap.data();
+            setThought({ id: thoughtSnap.id, ...data } as Thought);
           }
         }
       } catch (error) {
@@ -108,94 +112,88 @@ export default function ThoughtDetailScreen() {
     }
   };
 
-  if (loading) {
-    return (
+  return loading ? (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <ActivityIndicator size="large" color={theme.text} />
+    </SafeAreaView>
+  ) : !thought ? (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <Text style={[styles.errorText, { color: theme.text }]}>Thought not found</Text>
+    </SafeAreaView>
+  ) : (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <ActivityIndicator size="large" color={theme.text} />
-      </View>
-    );
-  }
-
-  if (!thought) {
-    return (
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <Text style={[styles.errorText, { color: theme.text }]}>Thought not found</Text>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={[styles.backButton, { color: theme.link }]}>Go Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.text} />
-        </TouchableOpacity>
-        
-        <View style={styles.headerActions}>
-          <TouchableOpacity 
-            onPress={handleToggleFavorite}
-            style={styles.actionButton}
-          >
-            <Ionicons 
-              name={thought.favorite ? "heart" : "heart-outline"} 
-              size={24} 
-              color={theme.text} 
-            />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
           </TouchableOpacity>
           
-          <TouchableOpacity 
-            onPress={() => shareThought(thought)}
-            style={styles.actionButton}
-          >
-            <Ionicons name="share-outline" size={24} color={theme.text} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            onPress={() => router.push(`/(screens)/EditThought?id=${thought.id}`)}
-            style={styles.actionButton}
-          >
-            <Ionicons name="pencil" size={24} color={theme.text} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            onPress={handleDelete}
-            style={styles.actionButton}
-          >
-            <Ionicons name="trash" size={24} color={theme.text} />
-          </TouchableOpacity>
-        </View>
-      </View>
-      
-      <ScrollView style={styles.content}>
-        <Text style={[styles.title, { color: theme.text }]}>{thought.title}</Text>
-        <Text style={[styles.date, { color: theme.textSecondary }]}>
-          {formatDate(thought.date)}
-        </Text>
-        
-        <Text style={[styles.thoughtContent, { color: theme.text }]}>
-          {thought.content}
-        </Text>
-        
-        {thought.tags && thought.tags.length > 0 && (
-          <View style={styles.tagsContainer}>
-            {thought.tags.map((tag, index) => (
-              <View key={index} style={[styles.tag, { backgroundColor: theme.tagBackground }]}>
-                <Text style={[styles.tagText, { color: theme.tagText }]}>
-                  {tag}
-                </Text>
-              </View>
-            ))}
+          <View style={styles.headerActions}>
+            <TouchableOpacity 
+              onPress={handleToggleFavorite}
+              style={styles.actionButton}
+            >
+              <Ionicons 
+                name={thought.favorite ? "heart" : "heart-outline"} 
+                size={24} 
+                color={theme.text} 
+              />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              onPress={() => shareThought(thought)}
+              style={styles.actionButton}
+            >
+              <Ionicons name="share-outline" size={24} color={theme.text} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              onPress={() => router.push(`/(screens)/EditThought?id=${thought.id}`)}
+              style={styles.actionButton}
+            >
+              <Ionicons name="pencil" size={24} color={theme.text} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              onPress={handleDelete}
+              style={styles.actionButton}
+            >
+              <Ionicons name="trash" size={24} color={theme.text} />
+            </TouchableOpacity>
           </View>
-        )}
-      </ScrollView>
-    </View>
+        </View>
+        
+        <ScrollView style={styles.content}>
+          <Text style={[styles.title, { color: theme.text }]}>{thought.title}</Text>
+          <Text style={[styles.date, { color: theme.textSecondary }]}>
+            {formatDate(thought.date)}
+          </Text>
+          
+          <Text style={[styles.thoughtContent, { color: theme.text }]}>
+            {thought.content}
+          </Text>
+          
+          {thought.tags && thought.tags.length > 0 && (
+            <View style={styles.tagsContainer}>
+              {thought.tags.map((tag, index) => (
+                <View key={index} style={[styles.tag, { backgroundColor: theme.tagBackground }]}>
+                  <Text style={[styles.tagText, { color: theme.tagText }]}>
+                    {tag}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     padding: 20,
@@ -205,12 +203,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+    marginTop: 10,
   },
   headerActions: {
     flexDirection: 'row',
   },
   backButton: {
-    padding: 8,
+    padding: 0,
   },
   actionButton: {
     padding: 8,

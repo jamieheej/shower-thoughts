@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, orderBy } from 'firebase/firestore';
 import db from '@/firebase/firebaseConfig'; 
 import ThoughtCard from '@/components/ThoughtCard';
 import { useUser } from '../(context)/UserContext';
@@ -22,22 +22,94 @@ type Thought = {
 }
 
 export default function ThoughtsScreen() {
-  console.log("ThoughtsScreen rendering");
   const router = useRouter();
   const { isGuestMode, theme, userInfo } = useUser();
-  const currentUserId = getAuth().currentUser?.uid;
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(false);
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 20,
+    },
+    filterContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 20,
+      gap: 10,
+    },
+    searchBarContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderColor: theme.border,
+      borderWidth: 1,
+      borderRadius: 50,
+      paddingHorizontal: 15,
+    },
+    searchBar: {
+      flex: 1,
+      height: 46,
+      fontSize: 16,
+    },
+    clearButton: {
+      padding: 8,
+    },
+    favoriteFilterButton: {
+      width: 46,
+      height: 46,
+      borderRadius: 23,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+    },
+    floatingButton: {
+      position: 'absolute',
+      width: 50,
+      height: 50,
+      bottom: 30,
+      right: 30,
+      borderRadius: 10,
+      padding: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 999,
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    emptyText: {
+      fontSize: 16,
+      textAlign: 'center',
+    },
+  });
+  
   // Load thoughts based on authentication state
   useEffect(() => {
     // For authenticated users
-    if (!isGuestMode && userInfo) {
+    const currentUser = getAuth().currentUser;
+    
+    if (!isGuestMode && currentUser) {
       // User is authenticated, load from Firestore
       const thoughtsRef = collection(db, 'thoughts');
-      const q = query(thoughtsRef, where('userId', '==', userInfo.id));
+      
+      // Create a base query for the user's thoughts
+      let q = query(thoughtsRef, where('userId', '==', currentUser.uid));
+      
+      // Add sorting to show newest first
+      q = query(q, orderBy('date', 'desc'));
+      
+      // If showing favorites only, add that filter
+      if (showFavoritesOnly) {
+        q = query(q, where('favorite', '==', true));
+      }
+      
+      // If there's a search query, we still need to filter client-side
+      // as Firestore doesn't support full-text search natively
       
       const unsubscribe = onSnapshot(q, 
         (querySnapshot) => {
@@ -45,7 +117,17 @@ export default function ThoughtsScreen() {
           querySnapshot.forEach((doc) => {
             thoughtsData.push({ id: doc.id, ...doc.data() } as Thought);
           });
-          setThoughts(thoughtsData);
+          
+          // If there's a search query, filter client-side
+          if (searchQuery.trim() !== '') {
+            const filteredData = thoughtsData.filter(thought => 
+              thought.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+              thought.content.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            setThoughts(filteredData);
+          } else {
+            setThoughts(thoughtsData);
+          }
         },
         (error) => {
           console.error("Firestore error:", error);
@@ -66,19 +148,43 @@ export default function ThoughtsScreen() {
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [isGuestMode, userInfo]);
+  }, [isGuestMode, userInfo, showFavoritesOnly, searchQuery]);
 
   // Load local thoughts for guest mode
   useFocusEffect(
     useCallback(() => {
-      console.log("useFocusEffect running, isGuestMode:", isGuestMode);
-      
       if (!isGuestMode) return;
       
       const loadLocalThoughts = async () => {
         setLoading(true);
         try {
-          const localThoughts = await getLocalThoughts();
+          let localThoughts = await getLocalThoughts();
+          
+          // Sort by date (newest first)
+          localThoughts = localThoughts.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            return dateB.getTime() - dateA.getTime();
+          });
+          
+          // Apply filters
+          if (showFavoritesOnly || searchQuery.trim() !== '') {
+            localThoughts = localThoughts.filter(thought => {
+              // Apply favorites filter
+              if (showFavoritesOnly && !thought.favorite) {
+                return false;
+              }
+              
+              // Apply search filter
+              if (searchQuery.trim() !== '') {
+                return thought.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                       thought.content.toLowerCase().includes(searchQuery.toLowerCase());
+              }
+              
+              return true;
+            });
+          }
+          
           setThoughts(localThoughts);
         } catch (error) {
           console.error('Error loading local thoughts:', error);
@@ -88,7 +194,7 @@ export default function ThoughtsScreen() {
       };
       
       loadLocalThoughts();
-    }, [isGuestMode])
+    }, [isGuestMode, showFavoritesOnly, searchQuery])
   );
 
   // Toggle favorite status
@@ -113,22 +219,32 @@ export default function ThoughtsScreen() {
     }
   };
 
-  // Filter thoughts based on search and favorites
-  const filteredThoughts = thoughts
-    .filter(thought => {
-      // First apply favorites filter if enabled
-      if (showFavoritesOnly && !thought.favorite) {
-        return false;
-      }
-      
-      // Then apply search filter if there's a query
-      if (searchQuery.trim() !== '') {
-        return thought.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-               thought.content.toLowerCase().includes(searchQuery.toLowerCase());
-      }
-      
-      return true;
-    });
+  const handlePress = useCallback((id: string) => {
+    router.push(`/(screens)/${id}`);
+  }, [router]);
+
+  const handleToggleFav = useCallback((thought: Thought) => {
+    handleToggleFavorite(thought);
+  }, [handleToggleFavorite]);
+
+  const getItemLayout = (data: any, index: number) => ({
+    length: 150, // Approximate height of your ThoughtCard
+    offset: 150 * index,
+    index,
+  });
+
+  // Memoize your empty component
+  const EmptyListComponent = useMemo(() => (
+    <View style={styles.emptyContainer}>
+      <Text style={[styles.emptyText, { color: theme.text }]}>
+        {showFavoritesOnly 
+          ? "No favorite thoughts yet" 
+          : searchQuery.trim() !== '' 
+            ? "No thoughts match your search" 
+            : "No thoughts yet. Add your first one!"}
+      </Text>
+    </View>
+  ), [showFavoritesOnly, searchQuery, theme.text]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -175,26 +291,22 @@ export default function ThoughtsScreen() {
         <ActivityIndicator size="large" color={theme.text} />
       ) : (
         <FlatList
-          data={filteredThoughts}
+          data={thoughts}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <ThoughtCard 
               thought={item}
-              onPress={() => router.push(`/(screens)/${item.id}`)}
-              onToggleFavorite={() => handleToggleFavorite(item)}
+              onPress={() => handlePress(item.id)}
+              onToggleFavorite={() => handleToggleFav(item)}
             />
           )}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={[styles.emptyText, { color: theme.text }]}>
-                {showFavoritesOnly 
-                  ? "No favorite thoughts yet" 
-                  : searchQuery.trim() !== '' 
-                    ? "No thoughts match your search" 
-                    : "No thoughts yet. Add your first one!"}
-              </Text>
-            </View>
-          }
+          ListEmptyComponent={EmptyListComponent}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={10}
+          initialNumToRender={10}
+          updateCellsBatchingPeriod={50}
+          getItemLayout={getItemLayout}
         />
       )}
       
@@ -208,62 +320,5 @@ export default function ThoughtsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    gap: 10,
-  },
-  searchBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 50,
-    paddingHorizontal: 15,
-  },
-  searchBar: {
-    flex: 1,
-    height: 46,
-    fontSize: 16,
-  },
-  clearButton: {
-    padding: 8,
-  },
-  favoriteFilterButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  floatingButton: {
-    position: 'absolute',
-    width: 50,
-    height: 50,
-    bottom: 30,
-    right: 30,
-    borderRadius: 10,
-    padding: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 999,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    textAlign: 'center',
-  },
-});
 
 
