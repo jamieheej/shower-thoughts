@@ -15,8 +15,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "flex-end",
-    alignItems: "flex-start",
+    alignItems: "center",
     padding: 20,
+    width: '100%',
+  },
+  titleContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
   },
   buttonsContainer: {
     width: '100%',
@@ -53,10 +58,12 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "bold",
     marginBottom: 10,
+    textAlign: 'center',
   },
   appDescription: {
     fontSize: 16,
     marginBottom: 20,
+    textAlign: 'center',
   },
   googleButton: {
     height: 44,
@@ -292,8 +299,10 @@ export default function HomeScreen() {
         isMuted={true}
       />
       <View style={styles.container}>
-        <Text style={styles.appName}>ShowerThoughts</Text>
-        <Text style={styles.appDescription}>A place for your thoughts to flow.</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.appName}>ShowerThoughts</Text>
+          <Text style={styles.appDescription}>A place for your thoughts to flow.</Text>
+        </View>
         
         <View style={styles.buttonsContainer}>
           {userInfo ? (
