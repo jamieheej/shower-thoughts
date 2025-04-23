@@ -15,25 +15,35 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "flex-end",
-    alignItems: "flex-start",
+    alignItems: "center",
     padding: 20,
+    width: '100%',
+  },
+  titleContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  buttonsContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 20,
   },
   button: {
     height: 44,
     width: 200,
-    marginBottom: 20,
     backgroundColor: "black",
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 50,
     paddingHorizontal: 20,
     paddingVertical: 10,
+    marginBottom: 16,
   },
   appleButton: {
     height: 44,
     width: 200,
-    marginBottom: 20,
     borderRadius: 50,
+    marginBottom: 16,
   },
   background: {
     position: 'absolute',
@@ -48,21 +58,22 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "bold",
     marginBottom: 10,
+    textAlign: 'center',
   },
   appDescription: {
     fontSize: 16,
     marginBottom: 20,
+    textAlign: 'center',
   },
   googleButton: {
     height: 44,
     width: 200,
-    marginBottom: 20,
     backgroundColor: "black",
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 50,
-    color: "white",
+    marginBottom: 16,
   },
   googleIcon: {
     width: 18,
@@ -77,13 +88,13 @@ const styles = StyleSheet.create({
   guestButton: {
     height: 44,
     width: 200,
-    marginTop: 10,
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 50,
+    marginBottom: 16,
   },
   guestButtonText: {
     color: 'white',
@@ -288,32 +299,35 @@ export default function HomeScreen() {
         isMuted={true}
       />
       <View style={styles.container}>
-        <Text style={styles.appName}>ShowerThoughts</Text>
-        <Text style={styles.appDescription}>A place for your thoughts to flow.</Text>
-        {userInfo ? (
-          <>
+        <View style={styles.titleContainer}>
+          <Text style={styles.appName}>ShowerThoughts</Text>
+          <Text style={styles.appDescription}>A place for your thoughts to flow.</Text>
+        </View>
+        
+        <View style={styles.buttonsContainer}>
+          {userInfo ? (
             <TouchableOpacity style={styles.button} onPress={handleLogout}>
               <Text style={{ color: 'white' }}>Logout</Text>
             </TouchableOpacity>
-          </>
-        ) : (
-          <>
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={50}
-              style={styles.appleButton}
-              onPress={handleAppleLogin}
-            />
-            <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
-              <AntDesign name="google" size={18} color="white" style={styles.googleIcon} />
-              <Text style={styles.googleText}>Sign in with Google</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.guestButton} onPress={handleGuestMode}>
-              <Text style={styles.guestButtonText}>Continue as Guest</Text>
-            </TouchableOpacity>
-          </>
-        )}
+          ) : (
+            <>
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                cornerRadius={50}
+                style={styles.appleButton}
+                onPress={handleAppleLogin}
+              />
+              <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
+                <AntDesign name="google" size={18} color="white" style={styles.googleIcon} />
+                <Text style={styles.googleText}>Sign in with Google</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.guestButton} onPress={handleGuestMode}>
+                <Text style={styles.guestButtonText}>Continue as Guest</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
       </View>
     </>
   );
