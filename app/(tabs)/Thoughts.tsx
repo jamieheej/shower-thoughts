@@ -19,6 +19,7 @@ type Thought = {
     tags: string[];
     favorite?: boolean;
     userId: string;
+    public?: boolean;
 }
 
 export default function ThoughtsScreen() {

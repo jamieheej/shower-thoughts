@@ -8,6 +8,7 @@ export type LocalThought = {
   userId: string;
   tags: string[];
   favorite?: boolean;
+  public?: boolean;
 };
 
 const THOUGHTS_STORAGE_KEY = "local_thoughts";
