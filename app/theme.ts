@@ -13,6 +13,8 @@ export type Theme = {
   tagBackground: string;
   tagText: string;
   link: string;
+  headerBackground: string;
+  tabBarBackground: string;
 };
 
 // Light theme
@@ -30,6 +32,8 @@ export const lightTheme: Theme = {
   tagBackground: "#E5E5EA",
   tagText: "#636366",
   link: "#333333",
+  headerBackground: "#f8f8f8",
+  tabBarBackground: "#f8f8f8",
 };
 
 // Dark theme
@@ -47,4 +51,6 @@ export const darkTheme: Theme = {
   tagBackground: "#38383A",
   tagText: "#AEAEB2",
   link: "#BBBBBB",
+  headerBackground: "#1e1e1e",
+  tabBarBackground: "#1e1e1e",
 };

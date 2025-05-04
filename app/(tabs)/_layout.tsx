@@ -1,63 +1,55 @@
 import React from "react";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { useUser } from "../(context)/UserContext"; // Ensure this import is correct
+import { useUser } from "../(context)/UserContext";
 import { ThemeProvider } from "@react-navigation/native";
 import { DarkTheme, DefaultTheme } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
-import ThoughtsScreen from "./Thoughts";
-import SettingsScreen from "./Settings";
-import NewThoughtScreen from "../NewThought";
-import { Ionicons } from '@expo/vector-icons'; // Import Ionicons
-
-const Tab = createBottomTabNavigator();
+import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
 
 export default function TabLayout() {
-  const { theme, isDarkTheme } = useUser(); // Get the current theme
+  const { theme, isDarkTheme } = useUser();
 
   return (
     <ThemeProvider value={isDarkTheme ? DarkTheme : DefaultTheme}>
-      <Tab.Navigator
+      <Tabs
         screenOptions={{
-          tabBarStyle: { backgroundColor: theme.background, borderTopColor: theme.border },
-          headerStyle: { backgroundColor: theme.background },
+          tabBarActiveTintColor: theme.primary,
+          tabBarInactiveTintColor: theme.textSecondary,
+          tabBarStyle: { backgroundColor: theme.tabBarBackground },
+          headerStyle: { backgroundColor: theme.headerBackground },
           headerTintColor: theme.text,
-          tabBarActiveTintColor: theme.text,
-          tabBarInactiveTintColor: theme.border,
-          tabBarShowLabel: false,
-          tabBarIconStyle: {
-            marginTop: 5,
-            marginBottom: 5,
-          }
         }}
       >
-        <Tab.Screen 
-          name="Thoughts" 
-          component={ThoughtsScreen} 
+        <Tabs.Screen
+          name="Thoughts"
           options={{
+            title: 'My Thoughts',
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="list" size={size} color={color} />
             ),
-          }} 
+          }}
         />
-        <Tab.Screen 
-          name="New Thought" 
-          component={NewThoughtScreen} 
+        
+        <Tabs.Screen
+          name="Explore"
           options={{
+            title: 'Explore',
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="add-circle" size={size} color={color} />
+              <Ionicons name="earth" size={size} color={color} />
             ),
-          }} 
+          }}
         />
-        <Tab.Screen 
-          name="Settings" 
-          component={SettingsScreen} 
+        
+        <Tabs.Screen
+          name="Settings"
           options={{
+            title: 'Settings',
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="settings" size={size} color={color} />
+              <Ionicons name="settings-outline" size={size} color={color} />
             ),
-          }} 
+          }}
         />
-      </Tab.Navigator>
+      </Tabs>
       <StatusBar style={isDarkTheme ? 'light' : 'dark'} />
     </ThemeProvider>
   );
