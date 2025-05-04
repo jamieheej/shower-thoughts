@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { useUser } from '../(context)/UserContext';
 import ThoughtCard from '@/components/ThoughtCard';
-import { Ionicons } from '@expo/vector-icons';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import db from '@/firebase/firebaseConfig';
+import { getLocalThoughts, LocalThought } from '@/utils/localStorageService';
+import { useFocusEffect } from '@react-navigation/native';
 
 // Sample public thoughts for MVP
 const samplePublicThoughts = [
@@ -62,27 +65,103 @@ type Thought = {
   tags: string[];
   favorite: boolean;
   userId: string;
+  public: boolean;
 };
 
 export default function ExploreScreen() {
-  const { theme } = useUser();
+  const { theme, isGuestMode } = useUser();
   const [loading, setLoading] = useState(true);
-  const [publicThoughts, setPublicThoughts] = useState<Thought[]>([]);
+  const [publicThoughts, setPublicThoughts] = useState<Thought[] | LocalThought[]>([]);
 
-  // Simulate loading public thoughts
+  // Function to load public thoughts
+  const loadPublicThoughts = async () => {
+    setLoading(true);
+    
+    try {
+      if (isGuestMode) {
+        // For guest mode, try to get public thoughts from AsyncStorage first
+        // If none exist, fall back to sample thoughts
+        try {
+          const parsedThoughts = await getLocalThoughts();
+          if (parsedThoughts) {
+            const publicThoughtsFromStorage = parsedThoughts.filter(
+              (thought: LocalThought) => thought.public === true
+            );
+            
+            if (publicThoughtsFromStorage.length > 0) {
+              // Sort by date (newest first)
+              const sortedThoughts = [...publicThoughtsFromStorage].sort((a, b) => {
+                return new Date(b.date).getTime() - new Date(a.date).getTime();
+              });
+              setPublicThoughts(sortedThoughts);
+            } else {
+              // If no public thoughts in storage, use sample thoughts
+              const sortedThoughts = [...samplePublicThoughts].sort((a, b) => {
+                return new Date(b.date).getTime() - new Date(a.date).getTime();
+              });
+              setPublicThoughts(sortedThoughts as Thought[]);
+            }
+          } else {
+            // If no thoughts in storage, use sample thoughts
+            const sortedThoughts = [...samplePublicThoughts].sort((a, b) => {
+              return new Date(b.date).getTime() - new Date(a.date).getTime();
+            });
+            setPublicThoughts(sortedThoughts as Thought[]);
+          }
+        } catch (error) {
+          console.error('Error reading from AsyncStorage:', error);
+          // Fallback to sample thoughts
+          const sortedThoughts = [...samplePublicThoughts].sort((a, b) => {
+            return new Date(b.date).getTime() - new Date(a.date).getTime();
+          });
+          setPublicThoughts(sortedThoughts as Thought[]);
+        }
+      } else {
+        // For authenticated users, fetch public thoughts from Firestore
+        const thoughtsRef = collection(db, 'thoughts');
+        const q = query(
+          thoughtsRef, 
+          where('public', '==', true),
+          orderBy('date', 'desc')
+        );
+        
+        try {
+          const querySnapshot = await getDocs(q);
+          const thoughts: Thought[] = [];
+          
+          querySnapshot.forEach((doc) => {
+            thoughts.push({ id: doc.id, ...doc.data() } as Thought);
+          });
+          
+          setPublicThoughts(thoughts);
+        } catch (error) {
+          console.error('Error fetching public thoughts from Firestore:', error);
+          // Fallback to sample thoughts if there's a permission error
+          const sortedThoughts = [...samplePublicThoughts].sort((a, b) => {
+            return new Date(b.date).getTime() - new Date(a.date).getTime();
+          });
+          setPublicThoughts(sortedThoughts as Thought[]);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading public thoughts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Use useFocusEffect to reload data when the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadPublicThoughts();
+      return () => {
+        // Optional cleanup if needed
+      };
+    }, [isGuestMode])
+  );
+
+  // Initial load (can be removed if you only want to load on focus)
   useEffect(() => {
-    const loadPublicThoughts = async () => {
-      // Simulate network delay
-      setTimeout(() => {
-        // Sort by date (newest first)
-        const sortedThoughts = [...samplePublicThoughts].sort((a, b) => {
-          return new Date(b.date).getTime() - new Date(a.date).getTime();
-        });
-        setPublicThoughts(sortedThoughts);
-        setLoading(false);
-      }, 1000);
-    };
-
     loadPublicThoughts();
   }, []);
 
