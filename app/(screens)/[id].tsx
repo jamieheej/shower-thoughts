@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Share, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, SafeAreaView, Switch } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import db from '@/firebase/firebaseConfig';
@@ -8,7 +8,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { getLocalThoughts, updateLocalThought, deleteLocalThought } from '@/utils/localStorageService';
 import { formatDate } from '@/utils/dateUtils';
 import { shareThought } from '@/utils/shareUtils';
-import { getAuth } from 'firebase/auth';
 
 type Thought = {
   id: string;
@@ -18,15 +17,93 @@ type Thought = {
   tags: string[];
   userId: string;
   favorite?: boolean;
+  public?: boolean;
 };
 
 export default function ThoughtDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { isGuestMode, theme, userInfo } = useUser();
+  const { isGuestMode, theme } = useUser();
   const [thought, setThought] = useState<Thought | null>(null);
   const [loading, setLoading] = useState(true);
-  const currentUser = getAuth().currentUser;
+  const [isPublic, setIsPublic] = useState(false);
+
+
+const styles = StyleSheet.create({
+    safeArea: {
+      flex: 1,
+    },
+    container: {
+      flex: 1,
+      padding: 20,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 20,
+      marginTop: 10,
+    },
+    headerActions: {
+      flexDirection: 'row',
+    },
+    backButton: {
+      padding: 0,
+    },
+    actionButton: {
+      padding: 8,
+      marginLeft: 16,
+    },
+    content: {
+      flex: 1,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginBottom: 8,
+    },
+    date: {
+      fontSize: 14,
+      marginBottom: 16,
+    },
+    thoughtContent: {
+      fontSize: 16,
+      lineHeight: 24,
+      marginBottom: 20,
+    },
+    tagsContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      marginTop: 16,
+    },
+    tag: {
+      borderRadius: 4,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      marginRight: 8,
+      marginBottom: 8,
+    },
+    tagText: {
+      fontSize: 14,
+    },
+    errorText: {
+      fontSize: 18,
+      textAlign: 'center',
+      marginBottom: 16,
+    },
+    publicToggleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 20,
+      paddingTop: 20,
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+    },
+    publicToggleText: {
+      fontSize: 16,
+    },
+  });
 
   useEffect(() => {
     const fetchThought = async () => {
@@ -37,6 +114,8 @@ export default function ThoughtDetailScreen() {
           const foundThought = localThoughts.find(t => t.id === id);
           if (foundThought) {
             setThought(foundThought);
+            // Initialize isPublic state from the thought data
+            setIsPublic(foundThought.public || false);
           }
         } else {
           // Fetch from Firestore for authenticated users
@@ -46,7 +125,10 @@ export default function ThoughtDetailScreen() {
           
           if (thoughtSnap.exists()) {
             const data = thoughtSnap.data();
-            setThought({ id: thoughtSnap.id, ...data } as Thought);
+            const thoughtData = { id: thoughtSnap.id, ...data } as Thought;
+            setThought(thoughtData);
+            // Initialize isPublic state from the thought data
+            setIsPublic(thoughtData.public || false);
           }
         }
       } catch (error) {
@@ -109,6 +191,30 @@ export default function ThoughtDetailScreen() {
       setThought(updatedThought);
     } catch (error) {
       console.error('Error updating favorite status:', error);
+    }
+  };
+
+  const handleTogglePublic = async () => {
+    if (!thought) return;
+    
+    const newPublicState = !isPublic;
+    const updatedThought = { ...thought, public: newPublicState };
+    
+    try {
+      if (isGuestMode) {
+        // Update in local storage
+        await updateLocalThought(updatedThought);
+      } else {
+        // Update in Firestore
+        const thoughtRef = doc(db, 'thoughts', id as string);
+        await updateDoc(thoughtRef, { public: newPublicState });
+      }
+      
+      // Update local state
+      setIsPublic(newPublicState);
+      setThought(updatedThought); // Also update the thought object
+    } catch (error) {
+      console.error('Error updating public status:', error);
     }
   };
 
@@ -185,71 +291,19 @@ export default function ThoughtDetailScreen() {
             </View>
           )}
         </ScrollView>
+        
+        <View style={styles.publicToggleContainer}>
+          <Text style={[styles.publicToggleText, { color: theme.text }]}>
+            Make this thought public
+          </Text>
+          <Switch
+            value={isPublic}
+            onValueChange={handleTogglePublic}
+            trackColor={{ false: theme.border, true: theme.primary }}
+            thumbColor={isPublic ? theme.buttonText : theme.background}
+          />
+        </View>
       </View>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 10,
-  },
-  headerActions: {
-    flexDirection: 'row',
-  },
-  backButton: {
-    padding: 0,
-  },
-  actionButton: {
-    padding: 8,
-    marginLeft: 16,
-  },
-  content: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  date: {
-    fontSize: 14,
-    marginBottom: 16,
-  },
-  thoughtContent: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 20,
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 16,
-  },
-  tag: {
-    borderRadius: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  tagText: {
-    fontSize: 14,
-  },
-  errorText: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-}); 
