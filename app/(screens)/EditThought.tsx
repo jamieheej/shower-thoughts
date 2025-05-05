@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Share } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Share, SafeAreaView } from 'react-native';
 import db from '@/firebase/firebaseConfig';
 import { useUser } from '../(context)/UserContext';
 import { getLocalThoughts, updateLocalThought } from '@/utils/localStorageService';
@@ -147,85 +147,87 @@ export default function EditThoughtScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.text} />
-        </TouchableOpacity>
-        
-        <Text style={[styles.headerTitle, { color: theme.text }]}>Edit Thought</Text>
-        
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={toggleFavorite} style={styles.actionButton}>
-            <Ionicons 
-              name={favorite ? "heart" : "heart-outline"} 
-              size={24} 
-              color={theme.text} 
-            />
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
           </TouchableOpacity>
           
-          <TouchableOpacity 
-            onPress={() => shareThought({ title, content, tags })}
-            style={styles.actionButton}
-          >
-            <Ionicons name="share-outline" size={24} color={theme.text} />
-          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Edit Thought</Text>
+          
+          <View style={styles.headerActions}>
+            <TouchableOpacity onPress={toggleFavorite} style={styles.actionButton}>
+              <Ionicons 
+                name={favorite ? "heart" : "heart-outline"} 
+                size={24} 
+                color={theme.text} 
+              />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              onPress={() => shareThought({ title, content, tags })}
+              style={styles.actionButton}
+            >
+              <Ionicons name="share-outline" size={24} color={theme.text} />
+            </TouchableOpacity>
+          </View>
         </View>
+        
+        <TextInput 
+          ref={titleInputRef}
+          style={[styles.input, { borderColor: theme.border, color: theme.text }]} 
+          placeholder="Title" 
+          value={title} 
+          onChangeText={setTitle}
+          placeholderTextColor={theme.textSecondary}
+        />
+        
+        <TextInput 
+          ref={contentInputRef}
+          style={[styles.contentInput, { borderColor: theme.border, color: theme.text }]} 
+          placeholder="Content" 
+          multiline 
+          numberOfLines={6}
+          textAlignVertical="top"
+          value={content} 
+          onChangeText={setContent}
+          placeholderTextColor={theme.textSecondary}
+        />
+        
+        <TextInput 
+          ref={tagInputRef}
+          style={[styles.input, { borderColor: theme.border, color: theme.text }]} 
+          placeholder="Add a tag" 
+          value={tagInput} 
+          onChangeText={setTagInput}
+          onSubmitEditing={handleAddTag}
+          placeholderTextColor={theme.textSecondary}
+        />
+        
+        <View style={styles.tagContainer}>
+          {tags.map((tag, index) => (
+            <Tag 
+              key={index} 
+              label={tag} 
+              onRemove={() => handleRemoveTag(tag)} 
+            />
+          ))}
+        </View>
+        
+        <TouchableOpacity 
+          style={[styles.saveButton, { backgroundColor: theme.buttonBackground }]} 
+          onPress={handleSave}
+          disabled={saving}
+        >
+          {saving ? (
+            <ActivityIndicator size="small" color={theme.buttonText} />
+          ) : (
+            <Text style={[styles.saveButtonText, { color: theme.buttonText }]}>Save Changes</Text>
+          )}
+        </TouchableOpacity>
       </View>
-      
-      <TextInput 
-        ref={titleInputRef}
-        style={[styles.input, { borderColor: theme.border, color: theme.text }]} 
-        placeholder="Title" 
-        value={title} 
-        onChangeText={setTitle}
-        placeholderTextColor={theme.textSecondary}
-      />
-      
-      <TextInput 
-        ref={contentInputRef}
-        style={[styles.contentInput, { borderColor: theme.border, color: theme.text }]} 
-        placeholder="Content" 
-        multiline 
-        numberOfLines={6}
-        textAlignVertical="top"
-        value={content} 
-        onChangeText={setContent}
-        placeholderTextColor={theme.textSecondary}
-      />
-      
-      <TextInput 
-        ref={tagInputRef}
-        style={[styles.input, { borderColor: theme.border, color: theme.text }]} 
-        placeholder="Add a tag" 
-        value={tagInput} 
-        onChangeText={setTagInput}
-        onSubmitEditing={handleAddTag}
-        placeholderTextColor={theme.textSecondary}
-      />
-      
-      <View style={styles.tagContainer}>
-        {tags.map((tag, index) => (
-          <Tag 
-            key={index} 
-            label={tag} 
-            onRemove={() => handleRemoveTag(tag)} 
-          />
-        ))}
-      </View>
-      
-      <TouchableOpacity 
-        style={[styles.saveButton, { backgroundColor: theme.buttonBackground }]} 
-        onPress={handleSave}
-        disabled={saving}
-      >
-        {saving ? (
-          <ActivityIndicator size="small" color={theme.buttonText} />
-        ) : (
-          <Text style={[styles.saveButtonText, { color: theme.buttonText }]}>Save Changes</Text>
-        )}
-      </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -238,6 +240,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+    marginTop: 10,
   },
   backButton: {
     padding: 8,
