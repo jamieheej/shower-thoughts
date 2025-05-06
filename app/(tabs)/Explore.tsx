@@ -2,59 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { useUser } from '../(context)/UserContext';
 import ThoughtCard from '@/components/ThoughtCard';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, updateDoc, doc } from 'firebase/firestore';
 import db from '@/firebase/firebaseConfig';
-import { getLocalThoughts, LocalThought } from '@/utils/localStorageService';
+import { getLocalThoughts, LocalThought, samplePublicThoughts, saveLocalThoughts } from '@/utils/localStorageService';
 import { useFocusEffect } from '@react-navigation/native';
-
-// Sample public thoughts for MVP
-const samplePublicThoughts = [
-  {
-    id: 'public-1',
-    title: 'The Universe is Vast',
-    content: 'If the universe is infinite, then somewhere there must be a planet exactly like Earth with someone exactly like you reading this exact thought.',
-    date: new Date(Date.now() - 86400000 * 2).toISOString(), // 2 days ago
-    tags: ['universe', 'philosophy'],
-    favorite: false,
-    userId: 'public-user-1',
-  },
-  {
-    id: 'public-2',
-    title: 'Shower Paradox',
-    content: 'The dirtier you are, the cleaner the shower water makes you, but the cleaner you get, the dirtier the shower water becomes.',
-    date: new Date(Date.now() - 86400000 * 5).toISOString(), // 5 days ago
-    tags: ['shower', 'paradox'],
-    favorite: false,
-    userId: 'public-user-2',
-  },
-  {
-    id: 'public-3',
-    title: 'Language Evolution',
-    content: 'Every word in every language was made up by someone at some point in history.',
-    date: new Date(Date.now() - 86400000 * 7).toISOString(), // 7 days ago
-    tags: ['language', 'history'],
-    favorite: false,
-    userId: 'public-user-3',
-  },
-  {
-    id: 'public-4',
-    title: 'Digital Memories',
-    content: 'Future generations will have their entire lives documented in photos and videos, unlike any generation before them.',
-    date: new Date(Date.now() - 86400000 * 10).toISOString(), // 10 days ago
-    tags: ['technology', 'future'],
-    favorite: false,
-    userId: 'public-user-4',
-  },
-  {
-    id: 'public-5',
-    title: 'Ocean Perspective',
-    content: 'The ocean is both a barrier and a connection between continents, depending on your technological capabilities.',
-    date: new Date(Date.now() - 86400000 * 14).toISOString(), // 14 days ago
-    tags: ['ocean', 'perspective'],
-    favorite: false,
-    userId: 'public-user-5',
-  },
-];
+import { useRouter } from 'expo-router';
 
 // Define the Thought type
 type Thought = {
@@ -63,15 +15,16 @@ type Thought = {
   content: string;
   date: string;
   tags: string[];
-  favorite: boolean;
+  favorite?: boolean;
   userId: string;
-  public: boolean;
+  public?: boolean;
 };
 
 export default function ExploreScreen() {
-  const { theme, isGuestMode } = useUser();
+  const { theme, isGuestMode, userInfo } = useUser();
   const [loading, setLoading] = useState(true);
   const [publicThoughts, setPublicThoughts] = useState<Thought[] | LocalThought[]>([]);
+  const router = useRouter();
 
   // Function to load public thoughts
   const loadPublicThoughts = async () => {
@@ -150,6 +103,63 @@ export default function ExploreScreen() {
     }
   };
 
+  // Add a function to handle liking thoughts
+const handleToggleLike = async (thoughtId: string) => {
+  // Find the thought in the current list
+  const updatedThoughts = publicThoughts.map(thought => {
+    if (thought.id === thoughtId) {
+      // Toggle the like state
+      const isLiked = thought.favorite || false;
+      
+      // Return updated thought with toggled favorite state and updated likes count
+      return {
+        ...thought,
+        favorite: !isLiked,
+      };
+    }
+    return thought;
+  });
+  
+  // Update state with the new array
+  setPublicThoughts(updatedThoughts as (Thought | LocalThought)[]);
+  
+  // If user is logged in, persist this change
+  try {
+    const thoughtToUpdate = publicThoughts.find(t => t.id === thoughtId);
+    
+    if (!thoughtToUpdate) return;
+    
+    if (isGuestMode) {
+      // For guest mode, update in local storage
+      const localThoughts = await getLocalThoughts();
+      const updatedLocalThoughts = localThoughts.map(t => {
+        if (t.id === thoughtId) {
+          const isLiked = t.favorite || false;
+          return {
+            ...t,
+            favorite: !isLiked,
+          };
+        }
+        return t;
+      });
+      
+      await saveLocalThoughts(updatedLocalThoughts);
+    } else if (userInfo?.id) {
+      // For logged in users, update in Firestore
+      // This is a simplified approach - in a real app you'd track likes per user
+      const thoughtRef = doc(db, 'thoughts', thoughtId);
+      const isLiked = thoughtToUpdate.favorite || false;
+      
+      await updateDoc(thoughtRef, {
+        favorite: !isLiked,
+      });
+    }
+  } catch (error) {
+    console.error('Error updating like status:', error);
+    // Revert the UI change if the update fails
+    loadPublicThoughts();
+  }
+};  
   // Use useFocusEffect to reload data when the screen comes into focus
   useFocusEffect(
     useCallback(() => {
@@ -165,10 +175,8 @@ export default function ExploreScreen() {
     loadPublicThoughts();
   }, []);
 
-  // Placeholder for when a thought card is pressed (no action for MVP)
   const handleThoughtPress = (thoughtId: string) => {
-    // No action for MVP
-    console.log(`Thought ${thoughtId} pressed - feature coming soon`);
+    router.push(`/(screens)/${thoughtId}`);
   };
 
   return (
@@ -177,13 +185,13 @@ export default function ExploreScreen() {
         <ActivityIndicator size="large" color={theme.text} />
       ) : (
         <FlatList
-          data={publicThoughts}
+          data={publicThoughts as (Thought | LocalThought)[]}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <ThoughtCard 
               thought={item}
               onPress={() => handleThoughtPress(item.id)}
-              onToggleFavorite={() => {}} // No action for MVP
+              onToggleFavorite={() => handleToggleLike(item.id)}
             />
           )}
           ListEmptyComponent={

@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, SafeAreaView, Switch } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import db from '@/firebase/firebaseConfig';
 import { useUser } from '../(context)/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 import { getLocalThoughts, updateLocalThought, deleteLocalThought } from '@/utils/localStorageService';
 import { formatDate } from '@/utils/dateUtils';
 import { shareThought } from '@/utils/shareUtils';
+import { getPublicThoughts } from '@/utils/localStorageService';
 
 type Thought = {
   id: string;
@@ -23,10 +24,12 @@ type Thought = {
 export default function ThoughtDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { isGuestMode, theme } = useUser();
+  const { isGuestMode, theme, userInfo } = useUser();
   const [thought, setThought] = useState<Thought | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPublic, setIsPublic] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
 
 
 const styles = StyleSheet.create({
@@ -107,32 +110,70 @@ const styles = StyleSheet.create({
 
   useEffect(() => {
     const fetchThought = async () => {
-      try {        
+      setLoading(true);
+      try {
+        if (!id) {
+          setError('No thought ID provided');
+          return;
+        }
+
+        let fetchedThought = null;
+
         if (isGuestMode) {
-          // Fetch from local storage for guest mode
+          // First try to find in local thoughts
           const localThoughts = await getLocalThoughts();
           const foundThought = localThoughts.find(t => t.id === id);
+          
           if (foundThought) {
-            setThought(foundThought);
-            // Initialize isPublic state from the thought data
-            setIsPublic(foundThought.public || false);
+            fetchedThought = foundThought;
+          } else {
+            // If not found in local thoughts, check sample public thoughts
+            const publicThoughts = await getPublicThoughts();
+            const publicThought = publicThoughts.find(t => t.id === id);
+            
+            if (publicThought) {
+              fetchedThought = publicThought;
+            } else {
+              setError('Thought not found');
+            }
           }
         } else {
-          // Fetch from Firestore for authenticated users
+          // For authenticated users, fetch from Firestore
           const thoughtRef = doc(db, 'thoughts', id as string);
-          
           const thoughtSnap = await getDoc(thoughtRef);
           
           if (thoughtSnap.exists()) {
-            const data = thoughtSnap.data();
-            const thoughtData = { id: thoughtSnap.id, ...data } as Thought;
-            setThought(thoughtData);
-            // Initialize isPublic state from the thought data
-            setIsPublic(thoughtData.public || false);
+            const thoughtData = thoughtSnap.data();
+            fetchedThought = { id: thoughtSnap.id, ...thoughtData } as Thought;
+          } else {
+            // If not found in user's thoughts, try public thoughts
+            const publicThoughtsRef = collection(db, 'thoughts');
+            const q = query(publicThoughtsRef, where('public', '==', true), where('id', '==', id));
+            const querySnapshot = await getDocs(q);
+            
+            if (!querySnapshot.empty) {
+              const publicThoughtData = querySnapshot.docs[0].data();
+              fetchedThought = { id: querySnapshot.docs[0].id, ...publicThoughtData } as Thought;
+            } else {
+              setError('Thought not found');
+            }
+          }
+        }
+
+        if (fetchedThought) {
+          setThought(fetchedThought);
+          setIsPublic(fetchedThought.public || false);
+          
+          // Determine ownership
+          if (isGuestMode) {
+            setIsOwner(fetchedThought.userId === 'guest');
+          } else {
+            setIsOwner(fetchedThought.userId === userInfo?.id);
           }
         }
       } catch (error) {
         console.error('Error fetching thought:', error);
+        setError('Failed to load thought');
       } finally {
         setLoading(false);
       }
@@ -141,7 +182,7 @@ const styles = StyleSheet.create({
     if (id) {
       fetchThought();
     }
-  }, [id, isGuestMode]);
+  }, [id, isGuestMode, userInfo?.id]);
 
   const handleDelete = async () => {
     Alert.alert(
@@ -224,7 +265,7 @@ const styles = StyleSheet.create({
     </SafeAreaView>
   ) : !thought ? (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <Text style={[styles.errorText, { color: theme.text }]}>Thought not found</Text>
+      <Text style={[styles.errorText, { color: theme.text }]}>{error}</Text>
     </SafeAreaView>
   ) : (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
@@ -253,19 +294,23 @@ const styles = StyleSheet.create({
               <Ionicons name="share-outline" size={24} color={theme.text} />
             </TouchableOpacity>
             
-            <TouchableOpacity 
-              onPress={() => router.push(`/(screens)/EditThought?id=${thought.id}`)}
-              style={styles.actionButton}
-            >
-              <Ionicons name="pencil" size={24} color={theme.text} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              onPress={handleDelete}
-              style={styles.actionButton}
-            >
-              <Ionicons name="trash" size={24} color={theme.text} />
-            </TouchableOpacity>
+            {isOwner && (
+              <>
+                <TouchableOpacity 
+                  onPress={() => router.push(`/(screens)/EditThought?id=${thought.id}`)}
+                  style={styles.actionButton}
+                >
+                  <Ionicons name="pencil" size={24} color={theme.text} />
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  onPress={handleDelete}
+                  style={styles.actionButton}
+                >
+                  <Ionicons name="trash" size={24} color={theme.text} />
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
         
@@ -292,17 +337,19 @@ const styles = StyleSheet.create({
           )}
         </ScrollView>
         
-        <View style={styles.publicToggleContainer}>
-          <Text style={[styles.publicToggleText, { color: theme.text }]}>
-            Make this thought public
-          </Text>
-          <Switch
-            value={isPublic}
-            onValueChange={handleTogglePublic}
-            trackColor={{ false: theme.border, true: theme.primary }}
-            thumbColor={isPublic ? theme.buttonText : theme.background}
-          />
-        </View>
+        {isOwner && (
+          <View style={styles.publicToggleContainer}>
+            <Text style={[styles.publicToggleText, { color: theme.text }]}>
+              Make this thought public
+            </Text>
+            <Switch
+              value={isPublic}
+              onValueChange={handleTogglePublic}
+              trackColor={{ false: theme.border, true: theme.primary }}
+              thumbColor={isPublic ? theme.buttonText : theme.background}
+            />
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
