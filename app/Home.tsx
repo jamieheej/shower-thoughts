@@ -171,8 +171,6 @@ export default function HomeScreen() {
       // Navigate to Thoughts
       router.replace('/(tabs)/Thoughts');
       
-      // Create a test thought
-      // await createTestThought(firebaseUser.uid);
     } catch (error: any) {
       handleAuthError(error);
     }
@@ -192,9 +190,6 @@ export default function HomeScreen() {
         userData.loginMethod = "google";
         await saveUserData(userData);
         router.push('/(tabs)/Thoughts');
-        
-        // Add this after successful login
-        await createTestThought(userData.id);
       }
     } catch (error: any) {
       handleAuthError(error);
