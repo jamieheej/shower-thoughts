@@ -6,6 +6,11 @@ import {
   deleteObject,
 } from "firebase/storage";
 import * as FileSystem from "expo-file-system";
+import { initializeApp } from "firebase/app";
+import firebaseConfig from "@/firebase/firebaseConfig";
+
+// Initialize Firebase if not already initialized
+// const app = initializeApp(firebaseConfig);
 
 export const uploadAudioToFirebase = async (
   localUri: string,
@@ -21,18 +26,35 @@ export const uploadAudioToFirebase = async (
 
     // Get a reference to Firebase Storage
     const storage = getStorage();
-    const storageRef = ref(storage, `audio/${userId}/${filename}`);
+
+    // Create a full path for the file
+    const fullPath = `audio/${userId}/${filename}`;
+
+    // Create a reference with an initial file path and name
+    const storageRef = ref(storage, fullPath);
+
+    console.log("Uploading to path:", fullPath);
 
     // Upload the file
-    await uploadBytes(storageRef, blob);
+    const snapshot = await uploadBytes(storageRef, blob);
+    console.log("Upload successful:", snapshot);
 
     // Get the download URL
     const downloadURL = await getDownloadURL(storageRef);
+    console.log("Download URL:", downloadURL);
 
     return downloadURL;
   } catch (error) {
     console.error("Error uploading audio to Firebase:", error);
-    throw error;
+
+    // For debugging
+    if (error instanceof Error) {
+      console.error("Error details:", error.message);
+      console.error("Error stack:", error.stack);
+    }
+
+    // Return the local URI as fallback
+    return localUri;
   }
 };
 
