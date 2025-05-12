@@ -15,6 +15,7 @@ export type Theme = {
   link: string;
   headerBackground: string;
   tabBarBackground: string;
+  error: string;
 };
 
 // Light theme
@@ -34,6 +35,7 @@ export const lightTheme: Theme = {
   link: "#333333",
   headerBackground: "#f8f8f8",
   tabBarBackground: "#f8f8f8",
+  error: "#FF3B30",
 };
 
 // Dark theme
@@ -53,4 +55,5 @@ export const darkTheme: Theme = {
   link: "#BBBBBB",
   headerBackground: "#1e1e1e",
   tabBarBackground: "#1e1e1e",
+  error: "#FF453A",
 };
