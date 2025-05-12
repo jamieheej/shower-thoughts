@@ -1,9 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Animated } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import { useUser } from '@/app/(context)/UserContext';
+
+// Add this helper function at the top
+const generateRandomHeights = (count: number, maxHeight: number, minHeight: number = 5) => {
+  return Array.from({ length: count }).map(() => 
+    Math.random() * (maxHeight - minHeight) + minHeight
+  );
+};
 
 type VoiceMemoProps = {
   audioUri?: string;
@@ -22,6 +29,48 @@ export default function VoiceMemo({ audioUri, onAudioRecorded, onAudioDeleted, r
   const [duration, setDuration] = useState(0);
   const [position, setPosition] = useState(0);
   const [loading, setLoading] = useState(false);
+  
+  // Animation related state
+  const animationRef = useRef<NodeJS.Timeout | null>(null);
+  const [waveformHeights, setWaveformHeights] = useState<number[]>([]);
+  const [animationActive, setAnimationActive] = useState(false);
+  
+  const BARS_COUNT = 30;
+  const MAX_HEIGHT = 40;
+  const MIN_HEIGHT = 5;
+  const ANIMATION_INTERVAL = 100; // ms
+
+  // Initialize waveform heights
+  useEffect(() => {
+    setWaveformHeights(generateRandomHeights(BARS_COUNT, MAX_HEIGHT, MIN_HEIGHT));
+  }, []);
+
+  // Handle animation for waveform
+  useEffect(() => {
+    if ((isRecording && !isPaused) || isPlaying) {
+      setAnimationActive(true);
+      
+      // Start animation loop
+      animationRef.current = setInterval(() => {
+        setWaveformHeights(generateRandomHeights(BARS_COUNT, MAX_HEIGHT, MIN_HEIGHT));
+      }, ANIMATION_INTERVAL);
+    } else {
+      setAnimationActive(false);
+      
+      // Clear animation loop
+      if (animationRef.current) {
+        clearInterval(animationRef.current);
+        animationRef.current = null;
+      }
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (animationRef.current) {
+        clearInterval(animationRef.current);
+      }
+    };
+  }, [isRecording, isPaused, isPlaying]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -187,35 +236,23 @@ export default function VoiceMemo({ audioUri, onAudioRecorded, onAudioDeleted, r
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
-  // Generate waveform visualization (simplified)
   const renderWaveform = () => {
-    const bars = 30;
-    const maxHeight = 40;
-    
     return (
       <View style={styles.waveformContainer}>
-        {Array.from({ length: bars }).map((_, index) => {
-          // Generate random heights for demo
-          // In a real app, you'd use actual audio data
-          const height = isRecording 
-            ? Math.random() * maxHeight + 5 
-            : (sound ? Math.random() * maxHeight + 5 : 5);
-            
-          return (
-            <View 
-              key={index}
-              style={[
-                styles.waveformBar,
-                { 
-                  height, 
-                  backgroundColor: isRecording || isPlaying 
-                    ? theme.primary 
-                    : theme.textSecondary 
-                }
-              ]}
-            />
-          );
-        })}
+        {waveformHeights.map((height, index) => (
+          <View 
+            key={index}
+            style={[
+              styles.waveformBar,
+              { 
+                height, 
+                backgroundColor: animationActive
+                  ? theme.primary 
+                  : theme.textSecondary 
+              }
+            ]}
+          />
+        ))}
       </View>
     );
   };
