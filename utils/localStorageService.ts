@@ -9,6 +9,7 @@ export type LocalThought = {
   tags: string[];
   favorite?: boolean;
   public?: boolean;
+  audioUri?: string;
 };
 
 const THOUGHTS_STORAGE_KEY = "local_thoughts";

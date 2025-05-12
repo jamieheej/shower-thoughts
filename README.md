@@ -1,6 +1,42 @@
-# Welcome to your Expo app 👋
+# 🧠 ShowerThoughts
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**ShowerThoughts** is a minimalist, distraction-free journaling app designed for fleeting thoughts, introspection, and anonymous sharing. Built for those moments when inspiration strikes — in the shower, before bed, or anywhere in between.
+
+---
+
+## ✨ Features
+
+- **Guest Mode** – No sign-up needed. Start writing instantly.
+- **Public Feed (Explore Tab)** – Browse anonymous thoughts shared by others.
+- **Search & Filter** – Quickly find past thoughts with keyword search and tags.
+- **Tagging System** – Organize your thoughts with custom tags.
+- **Account Deletion** – Full control over your data. Delete your account anytime.
+
+---
+
+## 📱 Screenshots
+
+[App Store Link](https://apps.apple.com/ca/app/shower-thoughts/id6743350873)
+
+---
+
+## 🛠️ Tech Stack
+
+- **React Native** (Expo)
+- **Firebase Firestore** – real-time database
+- **Firebase Auth** – for optional account features
+- **Firebase Functions & Storage** (optional)
+
+---
+
+## 🚀 Installation
+
+```bash
+git clone https://github.com/your-username/ShowerThoughts.git
+cd ShowerThoughts
+npm install
+npx expo start
+
 
 ## Get started
 

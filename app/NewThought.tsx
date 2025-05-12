@@ -11,6 +11,9 @@ import { saveLocalThought } from '@/utils/localStorageService';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid'; 
 import { getAuth } from 'firebase/auth';
+import VoiceMemo from '@/components/VoiceMemo';
+import * as FileSystem from 'expo-file-system';
+import { uploadAudioToFirebase } from '@/utils/audioStorage';
 
 export default function NewThoughtScreen() {
   const router = useRouter();
@@ -21,6 +24,7 @@ export default function NewThoughtScreen() {
   const [tagInput, setTagInput] = useState('');
   const { theme } = useUser();
   const [loading, setLoading] = useState(false);
+  const [audioUri, setAudioUri] = useState<string | undefined>(undefined);
 
   // Add refs for your TextInputs
   const titleInputRef = useRef<TextInput>(null);
@@ -140,6 +144,14 @@ export default function NewThoughtScreen() {
     setTags(prevTags => prevTags.filter(tag => tag !== tagToRemove));
   };
 
+  const handleAudioRecorded = (uri: string) => {
+    setAudioUri(uri);
+  };
+
+  const handleAudioDeleted = () => {
+    setAudioUri(undefined);
+  };
+
   const handleSave = async () => {
     if (!title.trim() || !content.trim()) {
       Alert.alert("Error", "Title and content are required");
@@ -151,8 +163,18 @@ export default function NewThoughtScreen() {
     try {
       const currentUser = getAuth().currentUser;
       
-      // Always use Firebase Auth UID when available
       const userId = currentUser?.uid;
+      
+      let permanentAudioUri = audioUri;
+      if (audioUri) {
+        if (isGuestMode) {
+          permanentAudioUri = audioUri;
+        } else {
+          if (userId) {
+            permanentAudioUri = await uploadAudioToFirebase(audioUri, userId);
+          }
+        }
+      }
       
       const newThought = {
         id: uuidv4(),
@@ -162,6 +184,7 @@ export default function NewThoughtScreen() {
         userId: userId || 'guest',
         tags: tags,
         favorite: false,
+        audioUri: permanentAudioUri,
       };
       
       if (isGuestMode) {
@@ -182,6 +205,7 @@ export default function NewThoughtScreen() {
       setTitle('');
       setContent('');
       setTags([]);
+      setAudioUri(undefined);
       
       router.back();
     } catch (error) {
@@ -224,6 +248,11 @@ export default function NewThoughtScreen() {
         value={content} 
         onChangeText={setContent}
         placeholderTextColor={theme.textSecondary}
+      />
+      <VoiceMemo 
+        audioUri={audioUri}
+        onAudioRecorded={handleAudioRecorded}
+        onAudioDeleted={handleAudioDeleted}
       />
       <TextInput 
         ref={tagInputRef}
