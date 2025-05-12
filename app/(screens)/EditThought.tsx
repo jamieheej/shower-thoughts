@@ -8,6 +8,7 @@ import { getLocalThoughts, updateLocalThought } from '@/utils/localStorageServic
 import Tag from '@/components/Tag';
 import { Ionicons } from '@expo/vector-icons';
 import { shareThought } from '@/utils/shareUtils';
+import VoiceMemo from '@/components/VoiceMemo';
 
 export default function EditThoughtScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -21,6 +22,7 @@ export default function EditThoughtScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [favorite, setFavorite] = useState(false);
+  const [audioUri, setAudioUri] = useState<string | undefined>(undefined);
 
   // Add refs for your TextInputs
   const titleInputRef = useRef<TextInput>(null);
@@ -47,6 +49,7 @@ export default function EditThoughtScreen() {
             setContent(thought.content);
             setTags(thought.tags || []);
             setFavorite(thought.favorite || false);
+            setAudioUri(thought.audioUri);
           } else {
             Alert.alert('Error', 'Thought not found');
             router.back();
@@ -62,6 +65,7 @@ export default function EditThoughtScreen() {
             setContent(thoughtData.content);
             setTags(thoughtData.tags || []);
             setFavorite(thoughtData.favorite || false);
+            setAudioUri(thoughtData.audioUri);
           } else {
             Alert.alert('Error', 'Thought not found');
             router.back();
@@ -90,6 +94,14 @@ export default function EditThoughtScreen() {
     setTags(prevTags => prevTags.filter(tag => tag !== tagToRemove));
   };
 
+  const handleAudioRecorded = (uri: string) => {
+    setAudioUri(uri);
+  };
+
+  const handleAudioDeleted = () => {
+    setAudioUri(undefined);
+  };
+
   const handleSave = async () => {
     if (!title.trim() || !content.trim()) {
       Alert.alert('Error', 'Title and content are required');
@@ -105,8 +117,9 @@ export default function EditThoughtScreen() {
         content,
         tags,
         favorite,
+        audioUri,
         // Keep the original date and userId
-        date: new Date().toISOString(), // You might want to keep the original date instead
+        date: new Date().toISOString(),
         userId: isGuestMode ? 'guest' : userInfo?.id || '',
       };
       
@@ -121,7 +134,7 @@ export default function EditThoughtScreen() {
           content,
           tags,
           favorite,
-          // Don't update date or userId
+          audioUri,
         });
       }
       
@@ -193,6 +206,12 @@ export default function EditThoughtScreen() {
           value={content} 
           onChangeText={setContent}
           placeholderTextColor={theme.textSecondary}
+        />
+        
+        <VoiceMemo 
+          audioUri={audioUri}
+          onAudioRecorded={handleAudioRecorded}
+          onAudioDeleted={handleAudioDeleted}
         />
         
         <TextInput 

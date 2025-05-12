@@ -12,18 +12,16 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.comfortstudio.showerthoughts",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSMicrophoneUsageDescription": "Allow ShowerThoughts to access your microphone to record voice memos for your thoughts."
       },
       "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
       "package": "com.comfortstudio.showerthoughts",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "permissions": ["RECORD_AUDIO"]
     },
     "web": {
       "bundler": "metro",
@@ -41,7 +39,13 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow ShowerThoughts to access your microphone to record voice memos for your thoughts."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

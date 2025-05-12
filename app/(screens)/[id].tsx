@@ -9,6 +9,7 @@ import { getLocalThoughts, updateLocalThought, deleteLocalThought } from '@/util
 import { formatDate } from '@/utils/dateUtils';
 import { shareThought } from '@/utils/shareUtils';
 import { getPublicThoughts } from '@/utils/localStorageService';
+import VoiceMemo from '@/components/VoiceMemo';
 
 type Thought = {
   id: string;
@@ -19,6 +20,7 @@ type Thought = {
   userId: string;
   favorite?: boolean;
   public?: boolean;
+  audioUri?: string;
 };
 
 export default function ThoughtDetailScreen() {
@@ -323,6 +325,15 @@ const styles = StyleSheet.create({
           <Text style={[styles.thoughtContent, { color: theme.text }]}>
             {thought.content}
           </Text>
+          
+          {thought.audioUri && (
+            <VoiceMemo 
+              audioUri={thought.audioUri}
+              onAudioRecorded={() => {}}
+              onAudioDeleted={() => {}}
+              readOnly={true}
+            />
+          )}
           
           {thought.tags && thought.tags.length > 0 && (
             <View style={styles.tagsContainer}>
