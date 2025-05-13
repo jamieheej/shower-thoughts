@@ -1,3 +1,4 @@
+import { storage } from "@/firebase/firebaseConfig";
 import {
   getStorage,
   ref,
@@ -5,12 +6,6 @@ import {
   getDownloadURL,
   deleteObject,
 } from "firebase/storage";
-import * as FileSystem from "expo-file-system";
-import { initializeApp } from "firebase/app";
-import firebaseConfig from "@/firebase/firebaseConfig";
-
-// Initialize Firebase if not already initialized
-// const app = initializeApp(firebaseConfig);
 
 export const uploadAudioToFirebase = async (
   localUri: string,
@@ -24,18 +19,21 @@ export const uploadAudioToFirebase = async (
     // Generate a unique filename
     const filename = `audio_${userId}_${Date.now()}.m4a`;
 
-    // Get a reference to Firebase Storage
-    const storage = getStorage();
+    if (!storage) {
+      console.error("Firebase Storage not initialized");
+      return localUri; // Return local URI as fallback
+    }
 
     // Create a full path for the file
     const fullPath = `audio/${userId}/${filename}`;
+    console.log("Creating storage reference with path:", fullPath);
 
     // Create a reference with an initial file path and name
     const storageRef = ref(storage, fullPath);
-
-    console.log("Uploading to path:", fullPath);
+    console.log("Storage reference created:", storageRef);
 
     // Upload the file
+    console.log("Starting upload...");
     const snapshot = await uploadBytes(storageRef, blob);
     console.log("Upload successful:", snapshot);
 
@@ -62,14 +60,38 @@ export const deleteAudioFromFirebase = async (
   audioUrl: string
 ): Promise<void> => {
   try {
-    // Extract the path from the URL
+    // Check if this is a Firebase URL or local URI
+    if (!audioUrl.startsWith("http")) {
+      console.log("Not a Firebase URL, skipping delete");
+      return;
+    }
+
+    // Get a reference to Firebase Storage
     const storage = getStorage();
-    const audioRef = ref(storage, audioUrl);
+
+    if (!storage) {
+      console.error("Firebase Storage not initialized");
+      return;
+    }
+
+    // Extract the path from the URL
+    // This is a simplified approach - you might need to parse the URL more carefully
+    const path = audioUrl.split("?")[0].split("/o/")[1];
+    if (!path) {
+      console.error("Could not extract path from URL:", audioUrl);
+      return;
+    }
+
+    const decodedPath = decodeURIComponent(path);
+    console.log("Deleting file at path:", decodedPath);
+
+    const audioRef = ref(storage, decodedPath);
 
     // Delete the file
     await deleteObject(audioRef);
+    console.log("File deleted successfully");
   } catch (error) {
     console.error("Error deleting audio from Firebase:", error);
-    throw error;
+    // Don't throw the error, just log it
   }
 };

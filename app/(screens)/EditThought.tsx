@@ -9,6 +9,8 @@ import Tag from '@/components/Tag';
 import { Ionicons } from '@expo/vector-icons';
 import { shareThought } from '@/utils/shareUtils';
 import VoiceMemo from '@/components/VoiceMemo';
+import { uploadAudioToFirebase, deleteAudioFromFirebase } from '@/utils/audioStorage';
+import * as FileSystem from 'expo-file-system';
 
 export default function EditThoughtScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -23,6 +25,7 @@ export default function EditThoughtScreen() {
   const [saving, setSaving] = useState(false);
   const [favorite, setFavorite] = useState(false);
   const [audioUri, setAudioUri] = useState<string | undefined>(undefined);
+  const [originalAudioUri, setOriginalAudioUri] = useState<string | undefined>(undefined);
 
   // Add refs for your TextInputs
   const titleInputRef = useRef<TextInput>(null);
@@ -50,6 +53,7 @@ export default function EditThoughtScreen() {
             setTags(thought.tags || []);
             setFavorite(thought.favorite || false);
             setAudioUri(thought.audioUri);
+            setOriginalAudioUri(thought.audioUri);
           } else {
             Alert.alert('Error', 'Thought not found');
             router.back();
@@ -66,6 +70,7 @@ export default function EditThoughtScreen() {
             setTags(thoughtData.tags || []);
             setFavorite(thoughtData.favorite || false);
             setAudioUri(thoughtData.audioUri);
+            setOriginalAudioUri(thoughtData.audioUri);
           } else {
             Alert.alert('Error', 'Thought not found');
             router.back();
@@ -98,7 +103,20 @@ export default function EditThoughtScreen() {
     setAudioUri(uri);
   };
 
-  const handleAudioDeleted = () => {
+  const handleAudioDeleted = async () => {
+    if (audioUri) {
+      if (audioUri.startsWith('http')) {
+        // Firebase Storage URL
+        await deleteAudioFromFirebase(audioUri);
+      } else {
+        // Local file
+        try {
+          await FileSystem.deleteAsync(audioUri);
+        } catch (error) {
+          console.log('File may not exist locally:', error);
+        }
+      }
+    }
     setAudioUri(undefined);
   };
 
@@ -122,6 +140,14 @@ export default function EditThoughtScreen() {
         date: new Date().toISOString(),
         userId: isGuestMode ? 'guest' : userInfo?.id || '',
       };
+      
+      if (audioUri && audioUri !== originalAudioUri) {
+        if (!isGuestMode && userInfo?.id) {
+          updatedThought.audioUri = await uploadAudioToFirebase(audioUri, userInfo.id);
+        } else {
+          updatedThought.audioUri = audioUri; // Keep local URI for guest mode
+        }
+      }
       
       if (isGuestMode) {
         // Update in local storage
