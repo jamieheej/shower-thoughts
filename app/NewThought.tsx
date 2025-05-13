@@ -168,8 +168,10 @@ export default function NewThoughtScreen() {
       let permanentAudioUri = audioUri;
       if (audioUri) {
         if (isGuestMode) {
+          // For guest mode, keep the local URI
           permanentAudioUri = audioUri;
         } else {
+          // For authenticated users, upload to Firebase Storage
           if (userId) {
             permanentAudioUri = await uploadAudioToFirebase(audioUri, userId);
           }

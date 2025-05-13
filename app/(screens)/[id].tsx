@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, SafeAreaView, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, SafeAreaView, Switch, Modal } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import db from '@/firebase/firebaseConfig';
 import { useUser } from '../(context)/UserContext';
 import { Ionicons } from '@expo/vector-icons';
-import { getLocalThoughts, updateLocalThought, deleteLocalThought } from '@/utils/localStorageService';
+import { getLocalThoughts, updateLocalThought, deleteLocalThought, LocalThought } from '@/utils/localStorageService';
 import { formatDate } from '@/utils/dateUtils';
 import { shareThought } from '@/utils/shareUtils';
 import { getPublicThoughts } from '@/utils/localStorageService';
 import VoiceMemo from '@/components/VoiceMemo';
+import { uploadAudioToFirebase } from '@/utils/audioStorage';
 
 type Thought = {
   id: string;
@@ -32,6 +33,7 @@ export default function ThoughtDetailScreen() {
   const [isPublic, setIsPublic] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
 
 const styles = StyleSheet.create({
@@ -107,6 +109,10 @@ const styles = StyleSheet.create({
     },
     publicToggleText: {
       fontSize: 16,
+    },
+    warningText: {
+      fontSize: 12,
+      marginTop: 4,
     },
   });
 
@@ -238,26 +244,52 @@ const styles = StyleSheet.create({
   };
 
   const handleTogglePublic = async () => {
-    if (!thought) return;
+    if (!isOwner) return;
     
-    const newPublicState = !isPublic;
-    const updatedThought = { ...thought, public: newPublicState };
+    // Block guest users from making thoughts with audio public
+    if (isGuestMode && thought?.audioUri && !isPublic) {
+      return;
+    }
+    
+    setIsUpdating(true);
     
     try {
-      if (isGuestMode) {
-        // Update in local storage
-        await updateLocalThought(updatedThought);
-      } else {
-        // Update in Firestore
-        const thoughtRef = doc(db, 'thoughts', id as string);
-        await updateDoc(thoughtRef, { public: newPublicState });
+      const newPublicState = !isPublic;
+      setIsPublic(newPublicState);
+      
+      // If making public and has audio that's not already in Firebase Storage
+      let updatedAudioUri = thought?.audioUri;
+      
+      // Only try to upload to Firebase if not in guest mode
+      if (newPublicState && thought?.audioUri && !thought.audioUri.startsWith('http') && !isGuestMode) {
+        // Upload to Firebase Storage
+        updatedAudioUri = await uploadAudioToFirebase(thought.audioUri, thought.userId);
       }
       
-      // Update local state
-      setIsPublic(newPublicState);
-      setThought(updatedThought); // Also update the thought object
+      // For guest mode, just keep the local URI
+      if (isGuestMode) {
+        // Update locally
+        const updatedThought = {
+          ...thought,
+          public: newPublicState,
+          // Keep the original audio URI for guest mode
+          audioUri: thought?.audioUri
+        };
+        await updateLocalThought(updatedThought as LocalThought);
+      } else {
+        // Update in Firestore
+        const thoughtRef = doc(db, 'thoughts', thought?.id as string);
+        await updateDoc(thoughtRef, { 
+          public: newPublicState,
+          audioUri: updatedAudioUri
+        });
+      }
     } catch (error) {
       console.error('Error updating public status:', error);
+      setIsPublic(isPublic); // Revert to original state on error
+      Alert.alert('Error', 'Failed to update public status');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -350,14 +382,24 @@ const styles = StyleSheet.create({
         
         {isOwner && (
           <View style={styles.publicToggleContainer}>
-            <Text style={[styles.publicToggleText, { color: theme.text }]}>
-              Make this thought public
-            </Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.publicToggleText, { color: theme.text }]}>
+                Make this thought public
+              </Text>
+              
+              {isGuestMode && thought?.audioUri && (
+                <Text style={[styles.warningText, { color: theme.error || 'red' }]}>
+                  Guest users cannot make thoughts with audio public
+                </Text>
+              )}
+            </View>
+            
             <Switch
               value={isPublic}
               onValueChange={handleTogglePublic}
               trackColor={{ false: theme.border, true: theme.primary }}
               thumbColor={isPublic ? theme.buttonText : theme.background}
+              disabled={isGuestMode && thought?.audioUri !== undefined}
             />
           </View>
         )}
