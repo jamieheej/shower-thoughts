@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
@@ -214,10 +214,15 @@ export default function VoiceMemo({ audioUri, onAudioRecorded, onAudioDeleted, r
       }
       
       if (audioUri) {
-        try {
-          await FileSystem.deleteAsync(audioUri);
-        } catch (error) {
-          console.log('File may not exist locally:', error);
+        if (audioUri.startsWith('http')) {
+          // Skip deleting remote files here - that's handled by the parent component
+        } else {
+          // Delete local file
+          try {
+            await FileSystem.deleteAsync(audioUri);
+          } catch (error) {
+            console.log('File may not exist locally:', error);
+          }
         }
       }
       
