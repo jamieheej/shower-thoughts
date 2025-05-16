@@ -186,9 +186,11 @@ export default function NewThoughtScreen() {
         userId: userId || 'guest',
         tags: tags,
         favorite: false,
-        audioUri: permanentAudioUri,
+        public: false,
+        // Only include audioUri if it's not undefined
+        ...(permanentAudioUri ? { audioUri: permanentAudioUri } : {})
       };
-      
+
       if (isGuestMode) {
         // Save locally for guest mode
         await saveLocalThought(newThought);

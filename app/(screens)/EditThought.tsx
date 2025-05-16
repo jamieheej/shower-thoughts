@@ -155,13 +155,26 @@ export default function EditThoughtScreen() {
       } else {
         // Update in Firestore
         const thoughtRef = doc(db, 'thoughts', id as string);
-        await updateDoc(thoughtRef, {
+        const updateData = {
           title,
           content,
           tags,
           favorite,
-          audioUri,
-        });
+          audioUri: audioUri || null
+        };
+        
+        // Only include audioUri if it exists
+        if (audioUri) {
+          updateData.audioUri = audioUri;
+        } else {
+          // If audioUri is undefined and there was an original audio,
+          // explicitly set it to null to remove it from Firestore
+          if (originalAudioUri) {
+            updateData.audioUri = null;
+          }
+        }
+        
+        await updateDoc(thoughtRef, updateData);
       }
       
       router.navigate('/(tabs)/Thoughts');
